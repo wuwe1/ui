@@ -71,7 +71,12 @@ function SegmentedControl({ options, value, defaultValue, onChange, size = "md",
 		const el = current === undefined ? undefined : buttons.current.get(current);
 		const r = row.current;
 		if (!el || !r) return setBox(null);
-		const measure = () => setBox({ left: el.offsetLeft, right: r.offsetWidth - el.offsetLeft - el.offsetWidth });
+		// Same place, same object: options passed inline are new every render, and a new box each time would render forever
+		const measure = () => {
+			const left = el.offsetLeft;
+			const right = r.offsetWidth - el.offsetLeft - el.offsetWidth;
+			setBox((b) => (b?.left === left && b.right === right ? b : { left, right }));
+		};
 		measure();
 		const ro = new ResizeObserver(measure);
 		ro.observe(r);
