@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../src/components/input.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
+import { MemoryPanel, type MemoryGroup, type MemoryItem } from "../src/components/memory-panel.tsx";
 import { NotificationStack, type Notice } from "../src/components/notification-stack.tsx";
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
@@ -27,7 +28,7 @@ export type Story = { name: string; render: () => ReactNode };
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
-	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "MessageActions"] },
+	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "MessageActions", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -176,6 +177,14 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Failed calls", render: () => <Reply stats={<TurnStats ms={96_000} tools={9} failed={2} files={FILES.slice(0, 1)} model="Sonnet 5.5" />} /> },
 		{ name: "Long", render: () => <Reply stats={<TurnStats ms={4_212_000} tools={148} failed={3} files={FILES} onFile={() => {}} agents={[...AGENTS, { id: "a3", label: "检查 iOS Safari 上的滚动" }, { id: "a4", label: "对比 affectUI 的 Agent Run 页面" }]} onAgent={() => {}} model="Opus 5.5" />} /> },
 	],
+	MemoryPanel: [
+		{ name: "Default", render: () => <Memories /> },
+		{ name: "Paused", render: () => <Memories initial={MEMORIES.map((m, i) => (i < 2 ? { ...m, paused: true } : m))} /> },
+		{ name: "Off", render: () => <Memories on={false} /> },
+		{ name: "Empty", render: () => <Memories initial={[]} /> },
+		{ name: "Loading", render: () => <MemoryPanel memories={[]} groups={GROUPS} loading enabled onEnabledChange={() => {}} /> },
+		{ name: "Long", render: () => <Memories initial={[...MEMORIES, ...MEMORIES.map((m) => ({ ...m, id: `${m.id}-2`, text: `${m.text}；另外在 lilto 和 listo 两个项目里也一样，长一点看看折行` }))]} /> },
+	],
 	Toast: [
 		{
 			name: "Kinds",
@@ -219,6 +228,43 @@ function Step({ running, summary }: { running?: boolean; summary: string }) {
 			<Shimmer active={running} className="truncate font-mono text-xs text-muted-foreground">{summary}</Shimmer>
 			<span className="ml-auto shrink-0 pl-2 text-2xs text-muted-foreground tabular-nums">{running ? "0:08" : "1.2s"}</span>
 		</div>
+	);
+}
+
+const GROUPS: MemoryGroup[] = [
+	{ id: "user", label: "你的偏好", hint: "你是谁、喜欢怎么做" },
+	{ id: "feedback", label: "做事的反馈", hint: "你纠正过、肯定过的做法" },
+	{ id: "project", label: "项目情况", hint: "进行中的事、约束" },
+	{ id: "reference", label: "外部资料", hint: "去哪找什么" },
+];
+const MEMORIES: MemoryItem[] = [
+	{ id: "zh", text: "回复用中文，术语用英文原名", detail: "hover、focus、tap、toast、spinner 直接写英文，不译成「指着」「焦点」。\n\n**Why:** 读的时候不用多转一道。", group: "feedback", source: "来自 mixer › Message Actions", date: "10/16" },
+	{ id: "color", text: "颜色克制：默认黑白灰，一块最多一种强调色", group: "feedback", source: "来自 mixer › 主题", date: "10/14" },
+	{ id: "pkill", text: "别用 pkill 按模式杀进程，只按 PID 或端口", group: "feedback", source: "来自 mixer › 修 block", date: "10/9" },
+	{ id: "penna", text: "ui 和 Penna 共用；ui 只对自己负责", group: "project", source: "来自 mixer › Toast", date: "10/16" },
+	{ id: "local", text: "域名、隧道、邮箱只写 CLAUDE.local.md", group: "project", source: "你写的", date: "10/2" },
+	{ id: "lang", text: "用户是独立开发者，前端和 agent 产品", group: "user", source: "来自 penna › 导出", date: "9/28" },
+];
+
+/** A panel wired like a host would: changes land in local state; forgetting keeps the item for Undo */
+function Memories({ initial = MEMORIES, on = true }: { initial?: MemoryItem[]; on?: boolean }) {
+	const [list, setList] = useState(initial);
+	const [enabled, setEnabled] = useState(on);
+	const [gone, setGone] = useState<Record<string, MemoryItem>>({});
+	return (
+		<MemoryPanel
+			memories={list}
+			groups={GROUPS}
+			enabled={enabled}
+			onEnabledChange={setEnabled}
+			offNote="Claude 不会读取或写入这个项目的 memory，已有的不会删除"
+			onAdd={(d) => setList((l) => [{ id: `n${Date.now()}`, text: d.text, group: d.group, source: "你写的", date: "刚刚" }, ...l])}
+			onEdit={(id, c) => setList((l) => l.map((m) => (m.id === id ? { ...m, ...c } : m)))}
+			onPause={(id, p) => setList((l) => l.map((m) => (m.id === id ? { ...m, paused: p } : m)))}
+			onForget={(id) => setList((l) => { const m = l.find((x) => x.id === id); if (m) setGone((g) => ({ ...g, [id]: m })); return l.filter((x) => x.id !== id); })}
+			onRestore={(id) => { const m = gone[id]; if (m) setList((l) => [m, ...l]); }}
+			onSource={() => toast("打开那个会话")}
+		/>
 	);
 }
 
