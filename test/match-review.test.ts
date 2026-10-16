@@ -44,7 +44,7 @@ test("decide: a pair that moves onto a sure pair's item pulls it into a group", 
 test("keep: the shared item goes to one, the other moves to its next candidate and waits; undecided again", () => {
 	const g = blocks(PAIRS, EMPTY).blocks[0]!;
 	if (g.kind !== "group") throw new Error("not a group");
-	const s = keep(g, PAIRS[0]!, EMPTY);
+	const s = keep(PAIRS, g, PAIRS[0]!, EMPTY);
 	assert.deepEqual(s.decisions.a, { pair: "a", right: "k5", proposed: "k5" });
 	assert.equal(s.moved.b, "k6");
 	const bs = blocks(PAIRS, s).blocks;
@@ -65,10 +65,32 @@ test("keep: a sure pair that loses its item comes into review with nothing propo
 	const s1 = decide(c, "b150", EMPTY);
 	const g = blocks(PAIRS, s1).blocks.find((b) => b.key === "g:b150")!;
 	if (g.kind !== "group") throw new Error("not a group");
-	const s2 = keep(g, c, s1);
+	const s2 = keep(PAIRS, g, c, s1);
 	assert.deepEqual(s2.promoted, ["s"]);
 	assert.equal(s2.moved.s, null);
 	assert.ok(blocks(PAIRS, s2).blocks.some((b) => b.key === "p:s"));
+});
+
+test("keep: the next candidate skips what is settled elsewhere – decided for another pair, or held by a sure pair still folded", () => {
+	const three = (id: string) => pair(id, "k1", "unsure", ["k2", "k3"]);
+	const P = [three("x"), three("y"), three("z")];
+	const g1 = blocks(P, EMPTY).blocks[0]!;
+	if (g1.kind !== "group") throw new Error("not a group");
+	const s1 = keep(P, g1, P[0]!, EMPTY);
+	assert.deepEqual([s1.moved.y, s1.moved.z], ["k2", "k2"]);
+	const g2 = blocks(P, s1).blocks.find((b) => b.key === "g:k2")!;
+	if (g2.kind !== "group") throw new Error("not a group");
+	// z doesn't go back to k1: x has it
+	assert.equal(keep(P, g2, P[1]!, s1).moved.z, "k3");
+	const Q = [pair("x", "k1", "unsure", ["k2", "k3"]), pair("y", "k1", "unsure", ["k2", "k3"]), pair("s", "k2", "sure")];
+	const g = blocks(Q, EMPTY).blocks[0]!;
+	if (g.kind !== "group") throw new Error("not a group");
+	const s = keep(Q, g, Q[0]!, EMPTY);
+	assert.equal(s.moved.y, "k3");
+	assert.deepEqual(
+		blocks(Q, s).sure.map((p) => p.id),
+		["s"],
+	);
 });
 
 test("keepAll: every pair keeps the item, the group stays and is no longer open", () => {

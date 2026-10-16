@@ -66,15 +66,17 @@ export function decide(p: MatchPair, right: string | null, s: ReviewState): Revi
 	return { ...s, decisions: { ...s.decisions, [p.id]: { pair: p.id, right, proposed: proposalOf(p, s) } } };
 }
 
-/** The shared item goes to keeper; the others move to their next candidate and wait again – a sure pair among them comes into review */
-export function keep(g: Extract<Block, { kind: "group" }>, keeper: MatchPair, s: ReviewState): ReviewState {
+/** The shared item goes to keeper; the others move to their next candidate and wait again – a sure pair among them comes into review.
+ * The next candidate skips what is settled elsewhere – decided for another pair, or held by a sure pair still folded: landing there would only reopen it */
+export function keep(pairs: MatchPair[], g: Extract<Block, { kind: "group" }>, keeper: MatchPair, s: ReviewState): ReviewState {
+	const others = g.pairs.filter((o) => o.id !== keeper.id);
 	const decisions = { ...s.decisions, [keeper.id]: { pair: keeper.id, right: g.shared, proposed: proposalOf(keeper, s) } };
+	for (const o of others) delete decisions[o.id];
+	const taken = new Set([...Object.values(decisions).map((d) => d.right), ...blocks(pairs, s).sure.map((p) => rightOf(p, s))]);
 	const moved = { ...s.moved };
 	const promoted = [...s.promoted];
-	for (const o of g.pairs) {
-		if (o.id === keeper.id) continue;
-		moved[o.id] = candidatesOf(o).find((c) => c.item.id !== g.shared)?.item.id ?? null;
-		delete decisions[o.id];
+	for (const o of others) {
+		moved[o.id] = candidatesOf(o).find((c) => !taken.has(c.item.id))?.item.id ?? null;
 		if (!inReview(o, s)) promoted.push(o.id);
 	}
 	return { ...s, decisions, moved, promoted };

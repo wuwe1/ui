@@ -204,7 +204,7 @@ function MatchReview({ pairs, signals = [], columns, label, decisions: given, on
 		apply(next, `p:${p.id}`, right === null ? `已否掉 ${p.left.label}` : `已确认 ${p.left.label}`, next.decisions[p.id]);
 	};
 	const give = (g: Extract<Block, { kind: "group" }>, keeper: MatchPair) => {
-		const next = keep(g, keeper, state);
+		const next = keep(list, g, keeper, state);
 		apply(next, g.key, `已留给 ${keeper.left.label}`, next.decisions[keeper.id]);
 	};
 	const giveAll = (g: Extract<Block, { kind: "group" }>) => apply(keepAll(g, state), g.key, `${g.pairs.length} 个都要`);

@@ -55,7 +55,7 @@ An agent's proposal of which item on the left goes with which on the right, sett
 
 `MatchLink`: `{ left: [start, end], right: [start, end], ok? }` – a part of each label, `ok: false` for same place, different value. The host computes them.
 
-`MatchDecision`: `{ pair, right, proposed }` – `right` equal to `proposed` is accepted, different is changed, null is rejected. A group's item kept by one moves the others to their next candidate; kept by all, they all point at it.
+`MatchDecision`: `{ pair, right, proposed }` – `right` equal to `proposed` is accepted, different is changed, null is rejected. A group's item kept by one moves the others to their next candidate – skipping items decided for another pair or held by a folded sure pair; kept by all, they all point at it.
 
 ## Keyboard interactions
 
