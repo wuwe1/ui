@@ -9,6 +9,7 @@ import { Input } from "./input.tsx";
 import { Skeleton } from "./skeleton.tsx";
 import { Textarea } from "./textarea.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip.tsx";
+import { useDragScroll } from "../hooks/use-drag-scroll.ts";
 import { step } from "../lib/roving.ts";
 import { counts, type MemoryGroup, type MemoryItem, short, trayLine, visible } from "../lib/memory-panel.ts";
 import { cn } from "../lib/utils.ts";
@@ -73,9 +74,14 @@ function Act({ icon: I, label, onClick, danger }: { icon: typeof Pencil; label: 
 	);
 }
 
-/** Group chips: a radiogroup, arrows move, one tab stop */
+/** A fade on each end that hides more chips */
+const fade = ({ start, end }: { start: boolean; end: boolean }) =>
+	start || end ? `linear-gradient(to right, ${start ? "transparent, black 24px" : "black"}, ${end ? "black calc(100% - 24px), transparent" : "black"})` : undefined;
+
+/** Group chips: a radiogroup, arrows move, one tab stop. Too many for the width – they scroll: swipe, drag with a mouse, or turn the wheel */
 function Chips({ groups, value, onChange, count, label }: { groups: { id: string; label: string }[]; value: string; onChange: (id: string) => void; count?: Record<string, number>; label: string }) {
 	const ref = useRef<HTMLDivElement>(null);
+	const more = useDragScroll(ref);
 	const key = (e: KeyboardEvent<HTMLDivElement>) => {
 		const i = groups.findIndex((g) => g.id === value);
 		const n = step(e.key === "ArrowDown" ? "ArrowRight" : e.key === "ArrowUp" ? "ArrowLeft" : e.key, i, groups.length);
@@ -87,7 +93,7 @@ function Chips({ groups, value, onChange, count, label }: { groups: { id: string
 		ref.current?.querySelectorAll<HTMLElement>("[role=radio]")[n]?.focus();
 	};
 	return (
-		<div ref={ref} role="radiogroup" aria-label={label} onKeyDown={key} className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto [mask-image:linear-gradient(to_right,black_calc(100%-16px),transparent)] pr-4">
+		<div ref={ref} role="radiogroup" aria-label={label} onKeyDown={key} style={{ maskImage: fade(more) }} className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain">
 			{groups.map((g) => (
 				<button
 					key={g.id}
@@ -95,7 +101,10 @@ function Chips({ groups, value, onChange, count, label }: { groups: { id: string
 					role="radio"
 					aria-checked={g.id === value}
 					tabIndex={g.id === value ? 0 : -1}
-					onClick={() => onChange(g.id)}
+					onClick={(e) => {
+						onChange(g.id);
+						e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
+					}}
 					className={cn(
 						"flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:h-9",
 						g.id === value ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",

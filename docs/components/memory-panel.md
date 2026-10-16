@@ -31,7 +31,7 @@ What an agent remembers across sessions, grouped and editable – a master switc
 - Off – the note, the list dimmed and still editable
 - Empty – 「暂无 memory」 and what will show up here
 - Loading – three skeleton rows
-- Long – text wraps and breaks anywhere; the chips scroll sideways with a fade at the edge
+- Long – text wraps and breaks anywhere; the chips scroll sideways with a fade on each end that hides more
 
 ## API reference
 
@@ -80,6 +80,7 @@ What an agent remembers across sessions, grouped and editable – a master switc
 - Fills its container; works from 300px
 - Below 340px the chips drop their counts; below 320px the switch keeps only its track
 - Touch: actions always visible, buttons and chips get taller hit areas
+- Chips that don't fit scroll sideways: swipe, drag with a mouse, or turn the wheel; a drag doesn't pick the chip it ends on, and a picked chip scrolls fully into view
 
 ## Notes for AI
 

@@ -287,10 +287,10 @@ function Step({ running, summary }: { running?: boolean; summary: string }) {
 }
 
 const GROUPS: MemoryGroup[] = [
-	{ id: "user", label: "你的偏好", hint: "你是谁、喜欢怎么做" },
-	{ id: "feedback", label: "做事的反馈", hint: "你纠正过、肯定过的做法" },
-	{ id: "project", label: "项目情况", hint: "进行中的事、约束" },
-	{ id: "reference", label: "外部资料", hint: "去哪找什么" },
+	{ id: "user", label: "user", hint: "你是谁、喜欢怎么做" },
+	{ id: "feedback", label: "feedback", hint: "你纠正过、肯定过的做法" },
+	{ id: "project", label: "project", hint: "进行中的事、约束" },
+	{ id: "reference", label: "reference", hint: "去哪找什么" },
 ];
 const MEMORIES: MemoryItem[] = [
 	{ id: "zh", text: "回复用中文，术语用英文原名", detail: "hover、focus、tap、toast、spinner 直接写英文，不译成「指着」「焦点」。\n\n**Why:** 读的时候不用多转一道。", group: "feedback", source: "来自 mixer › Message Actions", date: "10/16" },
