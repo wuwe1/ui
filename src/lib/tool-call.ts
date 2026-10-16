@@ -32,6 +32,7 @@ export function stack<I>(calls: { icon: I; status: ToolCallStatus }[], max = 3):
 	const out: { icon: I; failed: boolean }[] = [];
 	for (let i = calls.length - 1; i >= 0 && out.length < max; i--) {
 		const c = calls[i];
+		if (!c) continue;
 		if (!out.some((t) => t.icon === c.icon)) out.unshift({ icon: c.icon, failed: i === calls.length - 1 && c.status === "failed" });
 	}
 	return out;

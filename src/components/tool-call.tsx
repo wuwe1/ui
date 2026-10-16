@@ -191,7 +191,8 @@ function ToolCallGroup({ calls, running: busy, ms, exposed, actions, open, defau
 	const { running, failed, last } = state;
 	const done = busy === undefined ? state.done : !busy && calls.length > 0;
 	const count = calls.length;
-	const said = running.length ? `正在运行 ${running[0].name}` : !done ? "正在思考" : count ? `已完成 ${count} 次工具调用${failed ? `，${failed} 次失败` : ""}` : "";
+	const [first] = running;
+	const said = first ? `正在运行 ${first.name}` : !done ? "正在思考" : count ? `已完成 ${count} 次工具调用${failed ? `，${failed} 次失败` : ""}` : "";
 	return (
 		<Collapsible id={id} data-slot="tool-call-group" open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} className={cn("group/tools", className)}>
 			<span className="sr-only" role="status">
