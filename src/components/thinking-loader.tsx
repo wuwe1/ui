@@ -11,7 +11,8 @@ const reduced = () => typeof matchMedia === "function" && matchMedia("(prefers-r
 /** The label: a change rolls the old one up and out and the new one up and in, while the box glides to the new width */
 function Roll({ text, active }: { text: string; active: boolean }) {
 	const [items, setItems] = useState(() => [{ key: 0, text }]);
-	const last = items[items.length - 1];
+	// Never empty: the fallback only satisfies the index check
+	const last = items[items.length - 1] ?? { key: 0, text };
 	if (last.text !== text) setItems(reduced() ? [{ key: last.key + 1, text }] : [last, { key: last.key + 1, text }]);
 	const box = useRef<HTMLSpanElement>(null);
 	const [width, setWidth] = useState<number | null>(null);

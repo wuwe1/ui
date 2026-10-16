@@ -7,7 +7,7 @@ import { StatusIcon } from "../src/components/status-icon.tsx";
 import { toast } from "../src/components/toast.tsx";
 import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
 import { cn } from "../src/lib/utils.ts";
-import { contrast, flatten, type Mode, type Role, roles, SIGNALS, THEMES, type ThemeInput, type Tint, variables } from "../src/theme/index.ts";
+import { base, contrast, flatten, type Mode, type Role, roles, SIGNALS, THEMES, type ThemeInput, type Tint, variables } from "../src/theme/index.ts";
 
 const MODES: Mode[] = ["light", "dark"];
 const MODE_NAME: Record<Mode, string> = { light: "Light", dark: "Dark" };
@@ -24,14 +24,14 @@ function groupOf(name: string): string {
 const GROUPS = ["Surfaces", "Text", "Overlays", "Borders and focus", "Signals"];
 
 export function ThemePage() {
-	const [from, setFrom] = useState(THEMES[0].name);
-	const start = THEMES.find((t) => t.name === from) ?? THEMES[0];
+	const [from, setFrom] = useState(base.name);
+	const start = THEMES.find((t) => t.name === from) ?? base;
 	const [theme, setTheme] = useState<ThemeInput>(start);
 	const vars = useMemo(() => variables(theme) as CSSProperties, [theme]);
 	const list = useMemo(() => roles(theme), [theme]);
 	const reset = (name: string) => {
 		setFrom(name);
-		setTheme(THEMES.find((t) => t.name === name) ?? THEMES[0]);
+		setTheme(THEMES.find((t) => t.name === name) ?? base);
 	};
 	const tint = (mode: Mode, k: keyof Tint, v: number) => setTheme((t) => ({ ...t, name: "custom", note: "Custom", neutral: { ...t.neutral, [mode]: { ...t.neutral[mode], [k]: v } } }));
 	const copy = () => {
