@@ -17,6 +17,7 @@ import { Input } from "../src/components/input.tsx";
 import { Outline, useInView } from "../src/components/outline.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
+import { type MatchDecision, type MatchPair, MatchReview } from "../src/components/match-review.tsx";
 import { MemoryPanel, type MemoryGroup, type MemoryItem } from "../src/components/memory-panel.tsx";
 import { NotificationStack, type Notice } from "../src/components/notification-stack.tsx";
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
@@ -41,7 +42,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
-	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel"] },
+	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -306,6 +307,16 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Loading", render: () => <MemoryPanel memories={[]} groups={GROUPS} loading enabled onEnabledChange={() => {}} /> },
 		{ name: "Long", render: () => <Memories initial={[...MEMORIES, ...MEMORIES.map((m) => ({ ...m, id: `${m.id}-2`, text: `${m.text}；另外在 lilto 和 listo 两个项目里也一样，长一点看看折行` }))]} /> },
 	],
+	MatchReview: [
+		{ name: "Default", render: () => <Matches pairs={[MR_P3, MR_P1, MR_P2, ...MR_SURE]} /> },
+		{ name: "Conflict", render: () => <Matches pairs={MR_PAIRS} /> },
+		{ name: "All reviewed", render: () => <Matches pairs={MR_SURE} /> },
+		{ name: "Settled", render: () => <MatchReview pairs={MR_PAIRS} decisions={MR_DECIDED} label={MR_LABEL} columns={MR_COLUMNS} signals={MR_SIGNALS} /> },
+		{ name: "No images", render: () => <Matches pairs={MR_PAIRS.map(plain)} /> },
+		{ name: "Loading", render: () => <MatchReview pairs={null} label={MR_LABEL} /> },
+		{ name: "Empty", render: () => <Matches pairs={[]} /> },
+		{ name: "Long", render: () => <Matches pairs={MR_LONG} /> },
+	],
 	Toast: [
 		{
 			name: "Kinds",
@@ -349,6 +360,99 @@ function Step({ running, summary }: { running?: boolean; summary: string }) {
 			<Shimmer active={running} className="truncate font-mono text-xs text-muted-foreground">{summary}</Shimmer>
 			<span className="ml-auto shrink-0 pl-2 text-2xs text-muted-foreground tabular-nums">{running ? "0:08" : "1.2s"}</span>
 		</div>
+	);
+}
+
+/** A product photo stand-in: a soft tile with a shape and a mark – no network */
+const tile = (hue: number, mark: string) =>
+	`data:image/svg+xml;utf8,${encodeURIComponent(
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" fill="hsl(${hue} 45% 88%)"/><circle cx="24" cy="21" r="11" fill="hsl(${hue} 42% 62%)"/><text x="24" y="43" font-size="9" text-anchor="middle" fill="hsl(${hue} 30% 32%)" font-family="sans-serif">${mark}</text></svg>`,
+	)}`;
+const at = (s: string, t: string): [number, number] => {
+	const i = s.indexOf(t);
+	return [i, i + t.length];
+};
+/** Links between two labels from pairs of words: [left word, right word, matched?] */
+const linked = (l: string, r: string, words: [string, string, boolean?][]) =>
+	words.filter(([a, b]) => l.includes(a) && r.includes(b)).map(([a, b, ok = true]) => ({ left: at(l, a), right: at(r, b), ok }));
+const sku = (id: string, label: string, hue: number, mark: string) => ({ id, label, image: tile(hue, mark) });
+const MR_LABEL = "规格对照：kitty 猫硅藻泥地垫";
+const MR_COLUMNS: [string, string] = ["店里的规格", "1688 规格"];
+const MR_SIGNALS = [
+	{ id: "text", label: "文字" },
+	{ id: "image", label: "图" },
+];
+const K = {
+	k3: sku("k3", "kitty猫款式3 60*90cm", 200, "3"),
+	k4: sku("k4", "kitty猫款式4 60*90cm", 140, "4"),
+	k5: sku("k5", "kitty猫款式5 60*90cm", 340, "5"),
+	k6: sku("k6", "kitty猫款式6 60*90cm", 30, "6"),
+	k8: sku("k8", "kitty猫款式8 60*90cm", 260, "8"),
+	w100: sku("w100", "特粗26管【双杆】100白色+移动轮", 50, "W"),
+	b150: sku("b150", "特粗26管【双杆】150黑色+移动轮", 220, "B"),
+};
+const SIZE: [string, string][] = [["60*90", "60*90"]];
+const RACK = (n: string, c: string): [string, string, boolean?][] => [["雙桿", "双杆"], ["150", n, n === "150"], ["白", c, c === "白"], ["輪", "轮"]];
+const cand = (left: string, item: (typeof K)[keyof typeof K], scores: Record<string, number>, words: [string, string, boolean?][]) => ({ item, scores, links: linked(left, item.label, words) });
+const MR_P1: MatchPair = {
+	id: "p1",
+	left: { id: "l1", label: "03,60*90", image: tile(340, "5") },
+	right: K.k5,
+	links: linked("03,60*90", K.k5.label, SIZE),
+	confidence: "unsure",
+	candidates: [cand("03,60*90", K.k5, { text: 0.36, image: 0.97 }, SIZE), cand("03,60*90", K.k3, { text: 0.36, image: 0.41 }, SIZE), cand("03,60*90", K.k8, { text: 0.36, image: 0.37 }, SIZE)],
+};
+const MR_P2: MatchPair = {
+	id: "p2",
+	left: { id: "l2", label: "04,60*90", image: tile(30, "6") },
+	right: K.k5,
+	links: linked("04,60*90", K.k5.label, SIZE),
+	confidence: "unsure",
+	candidates: [cand("04,60*90", K.k5, { text: 0.36, image: 0.64 }, SIZE), cand("04,60*90", K.k6, { text: 0.36, image: 0.61 }, SIZE), cand("04,60*90", K.k4, { text: 0.36, image: 0.3 }, SIZE)],
+};
+const MR_P3: MatchPair = {
+	id: "p3",
+	left: { id: "l3", label: "雙桿150白+輪", image: tile(50, "W") },
+	right: K.w100,
+	links: linked("雙桿150白+輪", K.w100.label, RACK("100", "白")),
+	confidence: "unsure",
+	note: "缺 150",
+	candidates: [cand("雙桿150白+輪", K.w100, { text: 0.71, image: 0.24 }, RACK("100", "白")), cand("雙桿150白+輪", K.b150, { text: 0.64, image: 0.19 }, RACK("150", "黑"))],
+};
+const MR_SURE: MatchPair[] = [
+	["s1", "雙桿150黑+輪", K.b150, [["雙桿", "双杆"], ["150", "150"], ["黑", "黑"], ["輪", "轮"]]] as const,
+	["s2", "01,40*60", sku("k1", "kitty猫款式1 40*60cm", 100, "1"), [["40*60", "40*60"]]] as const,
+	["s3", "07,80*120", sku("k7", "kitty猫款式7 80*120cm", 300, "7"), [["80*120", "80*120"]]] as const,
+].map(([id, label, right, words]) => ({ id, left: { id: `${id}l`, label, image: right.image }, right, links: linked(label, right.label, words as unknown as [string, string][]), confidence: "sure" as const }));
+const MR_PAIRS = [MR_P1, MR_P2, MR_P3, ...MR_SURE];
+const MR_DECIDED: MatchDecision[] = [
+	{ pair: "p1", right: "k5", proposed: "k5" },
+	{ pair: "p2", right: "k6", proposed: "k5" },
+	{ pair: "p3", right: null, proposed: "w100" },
+	...MR_SURE.map((p) => ({ pair: p.id, right: p.right?.id ?? null, proposed: p.right?.id ?? null })),
+];
+const plain = (p: MatchPair): MatchPair => ({
+	...p,
+	left: { id: p.left.id, label: p.left.label },
+	right: p.right && { id: p.right.id, label: p.right.label },
+	candidates: p.candidates?.map((c) => ({ ...c, item: { id: c.item.id, label: c.item.label } })),
+});
+const MR_LONG: MatchPair[] = [MR_P2, MR_P1].map((p) => ({
+	...p,
+	left: { ...p.left, label: `${p.left.label} 加厚款｜浴室门口吸水速干防滑脚踏垫 免洗` },
+	right: p.right && { ...p.right, label: `${p.right.label}（硅藻泥软垫，卡通图案，家用入户卫生间）` },
+}));
+
+/** A review wired like a host: 「完成」 saves for a moment, then the card is settled */
+function Matches({ pairs }: { pairs: MatchPair[] }) {
+	return (
+		<MatchReview
+			pairs={pairs}
+			label={MR_LABEL}
+			columns={MR_COLUMNS}
+			signals={MR_SIGNALS}
+			onDone={(all) => new Promise((ok) => setTimeout(() => ok(toast.success(`已记下 ${all.filter((d) => d.right).length} 对`)), 800))}
+		/>
 	);
 }
 
