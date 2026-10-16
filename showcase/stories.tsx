@@ -2,6 +2,7 @@
 import { AppWindow, Bell, CircleAlert, FileText, GitFork, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
+import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
 import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
@@ -23,13 +24,14 @@ import { ToolCall, ToolCallGroup, type ToolCallItem } from "../src/components/to
 import { Textarea } from "../src/components/textarea.tsx";
 import { toast } from "../src/components/toast.tsx";
 import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
+import { cn } from "../src/lib/utils.ts";
 
 export type Story = { name: string; render: () => ReactNode };
 
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
-	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "MessageActions", "ConnectionCard", "MemoryPanel"] },
+	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -169,6 +171,21 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Some failed", render: () => <ToolCallGroup calls={[READ, FETCH, EDIT]} ms={9_400} /> },
 		{ name: "One failed call", render: () => <ToolCallGroup calls={[FETCH]} ms={8_000} /> },
 	],
+	ApprovalCard: [
+		{ name: "Pending", render: () => <Approval /> },
+		{ name: "Diff", render: () => <Approval kind="edit" /> },
+		{ name: "Expiring", render: () => <Approval until={Date.now() + 40_000} /> },
+		{ name: "From elsewhere", render: () => <Approval label={<span className="flex items-center gap-2"><span className="truncate">mixer › 修 block 手机闪退</span><span className="ml-auto shrink-0">查看 ›</span></span>} keys="none" /> },
+		{ name: "Optional parts", render: () => <Approval risk="high" always="始终允许这条命令" edit /> },
+		{
+			name: "Answered",
+			render: () => (
+				<div className={col}>
+					{(["approved", "denied", "expired", "cancelled"] as const).map((st) => <ApprovalCard key={st} title="运行命令" description="pnpm test" status={st} />)}
+				</div>
+			),
+		},
+	],
 	MessageActions: [
 		{ name: "Quiet", render: () => <Reply time /> },
 		{ name: "Lit", render: () => <Reply time quiet={false} /> },
@@ -177,14 +194,6 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "A few facts", render: () => <Reply stats={<TurnStats ms={4_200} tools={2} model="Opus 5.5" />} /> },
 		{ name: "Failed calls", render: () => <Reply stats={<TurnStats ms={96_000} tools={9} failed={2} files={FILES.slice(0, 1)} model="Sonnet 5.5" />} /> },
 		{ name: "Long", render: () => <Reply stats={<TurnStats ms={4_212_000} tools={148} failed={3} files={FILES} onFile={() => {}} agents={[...AGENTS, { id: "a3", label: "检查 iOS Safari 上的滚动" }, { id: "a4", label: "对比 affectUI 的 Agent Run 页面" }]} onAgent={() => {}} model="Opus 5.5" />} /> },
-	],
-	MemoryPanel: [
-		{ name: "Default", render: () => <Memories /> },
-		{ name: "Paused", render: () => <Memories initial={MEMORIES.map((m, i) => (i < 2 ? { ...m, paused: true } : m))} /> },
-		{ name: "Off", render: () => <Memories on={false} /> },
-		{ name: "Empty", render: () => <Memories initial={[]} /> },
-		{ name: "Loading", render: () => <MemoryPanel memories={[]} groups={GROUPS} loading enabled onEnabledChange={() => {}} /> },
-		{ name: "Long", render: () => <Memories initial={[...MEMORIES, ...MEMORIES.map((m) => ({ ...m, id: `${m.id}-2`, text: `${m.text}；另外在 lilto 和 listo 两个项目里也一样，长一点看看折行` }))]} /> },
 	],
 	ConnectionCard: [
 		{ name: "All set", render: () => <Browsers /> },
@@ -222,6 +231,14 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Not connected", render: () => <NoBrowser /> },
 		{ name: "Nothing to open", render: () => <ConnectionCard icon={<Globe />} name="chanboss" mark="off" status="缺浏览器" description="读订单：在授权了的 Chrome 里登录着就行" /> },
 		{ name: "Long", render: () => <Shops initial={MANY_SHOPS} long /> },
+	],
+	MemoryPanel: [
+		{ name: "Default", render: () => <Memories /> },
+		{ name: "Paused", render: () => <Memories initial={MEMORIES.map((m, i) => (i < 2 ? { ...m, paused: true } : m))} /> },
+		{ name: "Off", render: () => <Memories on={false} /> },
+		{ name: "Empty", render: () => <Memories initial={[]} /> },
+		{ name: "Loading", render: () => <MemoryPanel memories={[]} groups={GROUPS} loading enabled onEnabledChange={() => {}} /> },
+		{ name: "Long", render: () => <Memories initial={[...MEMORIES, ...MEMORIES.map((m) => ({ ...m, id: `${m.id}-2`, text: `${m.text}；另外在 lilto 和 listo 两个项目里也一样，长一点看看折行` }))]} /> },
 	],
 	Toast: [
 		{
@@ -387,6 +404,34 @@ function Phases() {
 		<div className={col}>
 			<ThinkingLoader label={LABELS[i]} since={Date.now() - 6_000} />
 			<Button variant="outline" size="sm" className="w-fit" onClick={() => setI((i + 1) % LABELS.length)}>换一句</Button>
+		</div>
+	);
+}
+
+const DIFF = (
+	<div className="font-mono text-xs leading-code">
+		{[["-", "const title = meta ? sessionTitle(meta) : null;"], ["+", "const title = meta ? sessionTitle(meta) : r.session?.slice(0, 8);"], [" ", "useEffect(() => { document.title = title; }, [title]);"]].map(([t, line], i) => (
+			<div key={i} className={cn("px-2.5 whitespace-pre-wrap break-all", t === "-" && "bg-removed-subtle", t === "+" && "bg-added-subtle")}>
+				<span className={cn("mr-2 select-none", t === "-" ? "text-removed-strong" : t === "+" ? "text-added-strong" : "text-muted-foreground")}>{t}</span>
+				{line}
+			</div>
+		))}
+	</div>
+);
+
+/** A card wired like a host would: approving takes 1.2s, then it folds into its outcome */
+function Approval({ kind = "bash", until = Date.now() + 8 * 60_000, label, risk, always, edit, keys = "focus" }: { kind?: "bash" | "edit"; until?: number; label?: ReactNode; risk?: "low" | "medium" | "high"; always?: string; edit?: boolean; keys?: "focus" | "global" | "none" }) {
+	const [status, setStatus] = useState<ApprovalStatus>("pending");
+	const settle = (st: ApprovalStatus) => new Promise((r) => setTimeout(r, 1200)).then(() => setStatus(st));
+	const common = { until, label, risk, always, keys, status, onApprove: () => settle("approved"), onDeny: () => settle("denied"), onEdit: edit ? () => {} : undefined };
+	return (
+		<div className={col}>
+			{kind === "edit" ? (
+				<ApprovalCard {...common} title="修改文件" description="web/src/app.tsx" icon={Pencil} preview={DIFF} />
+			) : (
+				<ApprovalCard {...common} title="运行命令" description="跑一遍测试" icon={SquareTerminal} code="pnpm test --filter ui" details={[{ label: "方式", value: "后台运行" }, { label: "超时", value: "120 秒" }]} args={JSON.stringify({ command: "pnpm test --filter ui", description: "跑一遍测试", run_in_background: true, timeout: 120000 }, null, 2)} />
+			)}
+			{status !== "pending" && <Button variant="ghost" size="xs" className="w-fit" onClick={() => setStatus("pending")}>再来一次</Button>}
 		</div>
 	);
 }
