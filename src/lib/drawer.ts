@@ -93,13 +93,13 @@ export function guardEdges() {
 	document.addEventListener("touchstart", (e) => {
 		tap = null;
 		const t = e.touches[0];
-		if (e.touches.length !== 1 || !e.cancelable || (t.clientX >= EDGE && t.clientX <= innerWidth - EDGE)) return;
+		if (!t || e.touches.length !== 1 || !e.cancelable || (t.clientX >= EDGE && t.clientX <= innerWidth - EDGE)) return;
 		e.preventDefault();
 		tap = { el: e.target as Element, x: t.clientX, y: t.clientY };
 	}, { passive: false });
 	document.addEventListener("touchend", (e) => {
 		const t = e.changedTouches[0];
-		if (!tap || Math.abs(t.clientX - tap.x) >= 10 || Math.abs(t.clientY - tap.y) >= 10) return;
+		if (!tap || !t || Math.abs(t.clientX - tap.x) >= 10 || Math.abs(t.clientY - tap.y) >= 10) return;
 		const el = tap.el;
 		tap = null;
 		(el.closest("input, textarea, select, [contenteditable]") as HTMLElement | null)?.focus();
@@ -120,7 +120,10 @@ function onHandle(target: Element, x: number, y: number) {
 	const r = s.getRangeAt(0).getClientRects();
 	if (!r.length) return false;
 	const near = (px: number, line: DOMRect) => Math.abs(x - px) < HANDLE && y > line.top - HANDLE && y < line.bottom + HANDLE;
-	return near(r[0].left, r[0]) || near(r[r.length - 1].right, r[r.length - 1]);
+	const first = r[0];
+	const last = r[r.length - 1];
+	if (!first || !last) return false;
+	return near(first.left, first) || near(last.right, last);
 }
 
 /**
@@ -151,6 +154,7 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 			// Also ignored with a long-press menu or a confirm dialog open
 			if (document.querySelector(`[role="dialog"]:not([data-drawer="${d.side}"]), [role="menu"], [role="alertdialog"]`)) return;
 			const t = e.touches[0];
+			if (!t) return;
 			const edge = d.side === "left" ? t.clientX < EDGE : t.clientX > innerWidth - EDGE;
 			let track = open || standalone || !edge;
 			const sign = open ? -opening : opening;
@@ -161,6 +165,7 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 		const move = (e: TouchEvent) => {
 			if (!g?.track) return;
 			const t = e.touches[0];
+			if (!t) return;
 			const dx = t.clientX - g.x;
 			const dy = t.clientY - g.y;
 			if (!g.dir) {
@@ -185,14 +190,14 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 			if (g.pts.length > 8) g.pts.shift();
 		};
 		const up = (e: TouchEvent) => {
-			if (!g) return;
 			const t = e.changedTouches[0];
+			if (!g || !t) return;
 			const dx = t.clientX - g.x;
 			const { dir, track, from, w, pts } = g;
 			g = null;
 			if (dir) {
 				// A fast enough fling wins; otherwise past halfway opens
-				const [t0, x0] = pts.find(([at]) => e.timeStamp - at <= 100) ?? pts[pts.length - 1];
+				const [t0, x0] = pts.find(([at]) => e.timeStamp - at <= 100) ?? pts[pts.length - 1] ?? [e.timeStamp, t.clientX];
 				const v = e.timeStamp > t0 ? ((t.clientX - x0) * opening) / (e.timeStamp - t0) : 0;
 				const next = v > FLING ? true : v < -FLING ? false : from + (dx * opening) / w > 0.5;
 				d.to(next ? 1 : 0);
