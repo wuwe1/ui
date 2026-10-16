@@ -680,7 +680,8 @@ function DataGrid({ label, columns, rows, group, defaultCollapsed, rowHeight, se
 		</div>
 	);
 
-	const card = cn("flex max-h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs", TINTS, className);
+	// isolate: the header row and the first column stack inside the card, never over what the host lays on top of it
+	const card = cn("isolate flex max-h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs", TINTS, className);
 
 	if (rows === null)
 		return (
