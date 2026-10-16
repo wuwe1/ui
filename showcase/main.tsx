@@ -1,6 +1,5 @@
-// 展示页：主题的每个 token（theme.tsx），每个组件的每种状态（stories.tsx 登记），能切深浅色、手机 / 平板 / 不限宽。
-// 完成度靠它看得见：改一个组件时在这里把它的每种状态过一遍；截图检查也照这一页，地址带参数直接打开一种：
-//   ?p=页（主题 / 组件名）&s=状态（不写是全部）&mode=dark&w=390（手机）| 768 | 0（不限宽）&bare=1（不要顶上那排选项）
+// 展示页：主题，和每个组件的每种状态。
+// 截图直接打开一种：?p=组件&s=状态&mode=dark&w=390&bare=1
 import "./styles.css";
 import { type ReactNode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";

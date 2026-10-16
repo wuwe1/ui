@@ -1,8 +1,5 @@
-// 颜色的算法：OKLCH ↔ sRGB、超出 sRGB 时降彩度、WCAG 2 对比度、按对比度求亮度。
-// 主题（roles.ts）全靠它推出来，不手挑色值：改主题只改旋钮（themes.ts），对比度由这里保证，test/theme.test.ts 钉着。
-// 公式照 Björn Ottosson 的 OKLab；半透明的颜色照浏览器的做法，在 sRGB（未线性化）里叠到底色上再算。
-// 写出去的颜色只降到 Display P3 放得下（琥珀、绿这些 sRGB 外面的颜色在广色域屏上照样鲜艳；比 P3 还大的
-// Chrome 会按通道截断、色相跑偏，所以先降好）。算对比度时按放进 sRGB 的样子估（亮度不变，差别很小）
+// 颜色算法：OKLCH ↔ sRGB、对比度（WCAG 2）、按对比度求亮度。
+// 输出只降到 P3 放得下：广色域屏上照样鲜艳，Chrome 也不会截断跑偏。
 
 /** OKLCH：l 亮度 0–1，c 彩度（sRGB 里一般不超过 0.37），h 色相（度），alpha 不透明度（不写是 1） */
 export type Oklch = { l: number; c: number; h: number; alpha?: number };

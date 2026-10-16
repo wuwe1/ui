@@ -1,6 +1,4 @@
-// 语义 token：组件只用这一层的名字（bg-background、text-muted-foreground、bg-waiting、text-waiting-strong…）。
-// 每个 token 由主题的旋钮（ThemeInput，themes.ts）在深浅两种模式下推出来：面的亮度是这里定的几档，文字按对比度求（color.ts 的 solve），
-// 不手挑色值。needs 是它要满足的对比度，test/theme.test.ts 对每个主题、每种模式都查一遍。docs/theme.md 讲为什么这样分
+// 语义 token：组件只用这一层。每个都由旋钮推出来，needs 是它要满足的对比度。
 import { flatten, type Oklch, solve } from "./color.ts";
 
 export type Mode = "light" | "dark";
@@ -60,30 +58,30 @@ export function roles(theme: ThemeInput): Role[] {
 	const SURFACES = ["background", "card", "popover", "sidebar"];
 
 	const list: Role[] = [
-		{ name: "sidebar", doc: "最外层：侧栏画在它上面", value: by((m) => n(m, s(m).sidebar)) },
-		{ name: "background", doc: "主内容板（浮在 sidebar 上）", value: by((m) => n(m, s(m).background)) },
-		{ name: "card", doc: "板上的卡片", value: by((m) => n(m, s(m).card)) },
-		{ name: "popover", doc: "浮层（菜单、Popover、对话框）", value: by((m) => n(m, s(m).card)) },
+		{ name: "sidebar", doc: "最外层：侧栏", value: by((m) => n(m, s(m).sidebar)) },
+		{ name: "background", doc: "主内容板", value: by((m) => n(m, s(m).background)) },
+		{ name: "card", doc: "卡片", value: by((m) => n(m, s(m).card)) },
+		{ name: "popover", doc: "菜单、浮层、对话框", value: by((m) => n(m, s(m).card)) },
 		{ name: "foreground", doc: "正文", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, SURFACES] },
 		{ name: "card-foreground", doc: "卡片上的正文", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["card"]] },
 		{ name: "popover-foreground", doc: "浮层上的正文", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["popover"]] },
 		{ name: "sidebar-foreground", doc: "侧栏上的字", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["sidebar"]] },
-		{ name: "muted-foreground", doc: "次要的字：时间、说明、占位", value: by((m) => solve(n(m, MUTED_TEXT[m]), TEXT.normal, [...surfaces(m), mutedBg(m)], away(m))), needs: [TEXT.normal, [...SURFACES, "muted"]] },
-		{ name: "primary", doc: "最强的一层：主按钮的底", value: by((m) => n(m, s(m).primary)) },
-		{ name: "primary-foreground", doc: "主按钮上的字", value: by((m) => n(m, m === "light" ? 1 : s(m).background)), needs: [TEXT.normal, ["primary"]] },
-		{ name: "secondary", doc: "次按钮的底（半透明，叠在哪层上都看得出）", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].muted)) },
-		{ name: "secondary-foreground", doc: "次按钮上的字", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["secondary"]] },
-		{ name: "muted", doc: "嵌的一层：代码块、徽标、轨道（半透明）", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].muted)) },
-		{ name: "accent", doc: "悬停、选中的一层（半透明）", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].accent)) },
-		{ name: "accent-foreground", doc: "悬停、选中的那一层上的字", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["accent"]] },
+		{ name: "muted-foreground", doc: "次要的字：时间、说明", value: by((m) => solve(n(m, MUTED_TEXT[m]), TEXT.normal, [...surfaces(m), mutedBg(m)], away(m))), needs: [TEXT.normal, [...SURFACES, "muted"]] },
+		{ name: "primary", doc: "主按钮的底", value: by((m) => n(m, s(m).primary)) },
+		{ name: "primary-foreground", doc: "主按钮的字", value: by((m) => n(m, m === "light" ? 1 : s(m).background)), needs: [TEXT.normal, ["primary"]] },
+		{ name: "secondary", doc: "次按钮的底，半透明", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].muted)) },
+		{ name: "secondary-foreground", doc: "次按钮的字", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["secondary"]] },
+		{ name: "muted", doc: "嵌的一层：代码、徽标，半透明", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].muted)) },
+		{ name: "accent", doc: "悬停、选中，半透明", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].accent)) },
+		{ name: "accent-foreground", doc: "悬停、选中那一层上的字", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["accent"]] },
 		{ name: "sidebar-accent", doc: "侧栏里悬停、选中的一行", value: by((m) => gray(theme.neutral[m], ink(m), OVERLAY[m].accent)) },
 		{ name: "sidebar-accent-foreground", doc: "侧栏里选中那一行的字", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["sidebar-accent"]] },
 		{ name: "sidebar-primary", doc: "侧栏里最强的一层", value: by((m) => n(m, s(m).primary)) },
 		{ name: "sidebar-primary-foreground", doc: "侧栏里最强那一层上的字", value: by((m) => n(m, m === "light" ? 1 : s(m).background)), needs: [TEXT.normal, ["sidebar-primary"]] },
-		{ name: "border", doc: "分隔线、卡片的边（装饰性的，不靠它认出能点的东西）", value: by((m) => n(m, s(m).border)) },
+		{ name: "border", doc: "分隔线、卡片边", value: by((m) => n(m, s(m).border)) },
 		{ name: "input", doc: "输入框的边", value: by((m) => n(m, s(m).input)) },
 		{ name: "sidebar-border", doc: "侧栏里的分隔线", value: by((m) => n(m, s(m).sidebarBorder)) },
-		{ name: "ring", doc: "焦点环（组件里叠半透明用）", value: by((m) => n(m, s(m).ring)) },
+		{ name: "ring", doc: "焦点环", value: by((m) => n(m, s(m).ring)) },
 		{ name: "sidebar-ring", doc: "侧栏里的焦点环", value: by((m) => n(m, s(m).ring)) },
 	];
 
@@ -92,14 +90,14 @@ export function roles(theme: ThemeInput): Role[] {
 		const subtle = (m: Mode): Oklch => ({ ...solid(m), alpha: SUBTLE[m] });
 		const what = SIGNAL_DOC[sig];
 		list.push(
-			{ name: sig, doc: `${what}：点、图标、填色（实心）`, value: by(solid) },
+			{ name: sig, doc: `${what}：点、图标`, value: by(solid) },
 			{
 				name: `${sig}-strong`,
-				doc: `${what}：当字用（在每层面上、在自己的淡底上，对比度至少 ${TEXT.normal}）`,
+				doc: `${what}：字`,
 				value: by((m) => solve(solid(m), TEXT.normal, [...surfaces(m), flatten(subtle(m), n(m, s(m).background))], away(m))),
 				needs: [TEXT.normal, [...SURFACES, `${sig}-subtle`]],
 			},
-			{ name: `${sig}-subtle`, doc: `${what}：淡底（diff 的行、徽标）`, value: by(subtle) },
+			{ name: `${sig}-subtle`, doc: `${what}：淡底`, value: by(subtle) },
 		);
 	}
 	return list;
@@ -107,11 +105,11 @@ export function roles(theme: ThemeInput): Role[] {
 
 /** 有固定意思的颜色各是什么意思（全站一样，不拿来装饰、分类） */
 export const SIGNAL_DOC: Record<Signal, string> = {
-	waiting: "要你处理（待确认、快到上限）",
-	unread: "新的、在跑、跑完没看过",
-	success: "成功了",
-	destructive: "出错、删除、危险的操作",
-	added: "新增（文件、行）",
+	waiting: "要你处理",
+	unread: "新的、在跑",
+	success: "成功",
+	destructive: "出错、删除",
+	added: "新增",
 	modified: "修改",
 	renamed: "重命名",
 };

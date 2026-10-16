@@ -1,5 +1,4 @@
-// 展示页里有哪些组件、各有哪几种状态（main.tsx 照这个画）。状态的名字和 docs/components/<组件>.md 的 States 对得上；
-// 新组件在这里登记，状态要写全：空、加载中、出错、很长、很多、禁用、深浅色下都要能看
+// 展示页登记的组件和状态。状态名和 docs/components/<组件>.md 的 States 对得上。
 import { Bell, CircleAlert, Inbox, Plus, Search, SquarePen, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";

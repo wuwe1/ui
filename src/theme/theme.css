@@ -1,7 +1,6 @@
 /*
- * Tailwind 认的名字：token（tokens.css 里的变量）→ bg-background、text-muted-foreground、bg-waiting、text-waiting-strong…；
- * 字号、圆角、字体、动效也在这里。只有 Tailwind 的指令，不出任何样式：所以页面里现场给 block 编 class 时能整份拿去当输入（mixer 的 lib/block-compile.ts）。
- * 值在 tokens.css（生成的），怎么推出来的在 roles.ts，为什么这样分在 docs/theme.md
+ * token → Tailwind 名字，还有字号、圆角、字体、缓动。
+ * 只放 Tailwind 指令：mixer 现场编 block 的 class 时会整份拿去用。
  */
 @custom-variant dark (&:is(.dark *));
 

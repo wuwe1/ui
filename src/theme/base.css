@@ -1,8 +1,6 @@
 /*
- * 每页都要的底。深浅色看 color-scheme（tokens.css 的 light-dark() 照它取值）：
- *   什么都不写跟着系统，一行 JS 都不用、也不会先白一下；.dark / .light 套在哪一块，那一块就固定成深 / 浅（apply.ts 的 applyMode 帮着加）。
- *   Tailwind 的 dark: 认的是 .dark 这个 class（theme.css），所以用到 dark: 的页面要让 applyMode 加上 class
- * 边框默认用 border 色，正文的底和字，能点的东西是手指。
+ * 每页的底。不写 class 跟着系统；.dark / .light 固定那一块的深浅。
+ * Tailwind 的 dark: 认 class，用到它的页面要 applyMode。
  */
 :root {
 	color-scheme: light dark;

@@ -1,6 +1,4 @@
-// 主题 → CSS：每个 token 一行 light-dark(浅色, 深色)，深浅由 color-scheme 决定（base.css 里 .dark 换成 dark）。
-// 所以套主题不用 JS、也不用写「深色下的这个主题」这种组合选择器：data-theme 套在哪一块，那一块就换；.dark 套在哪一块，那一块就变深。
-// 默认主题（THEMES 的第一个）同时写在 :root 上。scripts/gen-theme.ts 用它生成 tokens.css；apply.ts 运行时套自定义主题也用它
+// 主题 → CSS。每个 token 写成 light-dark(浅, 深)：主题、深浅色能套在任何一块上，不用组合选择器。
 import { css } from "./color.ts";
 import { roles, type ThemeInput } from "./roles.ts";
 

@@ -1,5 +1,4 @@
-// 运行时套主题、切深浅色。内置主题用不着这里：在任何元素上写 data-theme="paper"，那一块就换了（tokens.css）；
-// 这里给的是自定义的主题（展示页拖旋钮调出来的、用户自己存的）和深浅色的偏好
+// 运行时套用户自己的主题、切深浅色。内置主题直接写 data-theme。
 import { variables } from "./css.ts";
 import type { ThemeInput } from "./roles.ts";
 

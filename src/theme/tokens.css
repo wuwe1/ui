@@ -1,4 +1,4 @@
-/* 生成的，别手改：改 src/theme/themes.ts（旋钮）或 roles.ts（怎么推），再 pnpm gen。docs/theme.md */
+/* 生成的，别手改。改 themes.ts 或 roles.ts，再 pnpm gen。 */
 
 /* base：默认：黑白灰，颜色只留给状态和改动 */
 :root,

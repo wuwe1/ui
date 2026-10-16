@@ -1,5 +1,4 @@
-// 内置主题：改主题只改这里的旋钮（ThemeInput，roles.ts），别的颜色都推出来；改完 pnpm gen 重新生成 tokens.css。
-// 展示页的「主题」一页能拖着旋钮现场看，满意了把它给的那段贴回这里。docs/theme.md
+// 内置主题。改主题只改这里的旋钮，再 pnpm gen。
 import type { ThemeInput } from "./roles.ts";
 
 /** 默认：黑白灰，四层灰从外到里一层比一层亮（affectUI 的底子），深色的灰带一点冷色；颜色只留给有固定意思的地方 */

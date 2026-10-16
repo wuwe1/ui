@@ -1,8 +1,4 @@
-/*
- * 组件用的 variant：data-open、data-closed、data-checked…（Radix 的 data-state 和新写法的 data-open 两种都认），
- * 还有 accordion 的动画、no-scrollbar。照 shadcn/ui（MIT）的 tailwind.css 抄的这一部分，那个包别的东西（shimmer、scroll-fade）用不上，
- * 就不依赖整个 shadcn 命令行包了
- */
+/* 组件用的 variant（data-open 等）和 accordion 动画，摘自 shadcn/ui 的 tailwind.css（MIT）。 */
 @theme inline {
   @keyframes accordion-down {
     from {

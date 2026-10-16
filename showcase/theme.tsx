@@ -1,5 +1,4 @@
-// 主题页：拖旋钮现场改主题（深浅两种并排看一小块真实的界面），每个 token 的用途、两种模式下的样子，字的对比度够不够。
-// 调满意了点「复制」，把那段贴回 src/theme/themes.ts，再 pnpm gen。docs/theme.md
+// 主题页：拖旋钮看深浅两块预览和每个 token 的对比度，「复制」贴回 themes.ts。
 import { Check, Copy, RotateCcw, X } from "lucide-react";
 import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
 import { Badge } from "../src/components/badge.tsx";

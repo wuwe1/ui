@@ -1,4 +1,4 @@
-// 主题的入口（@wuwe1/ui/theme）：内置主题、推 token 的办法、生成 CSS、运行时套主题。docs/theme.md
+// @wuwe1/ui/theme 的入口。
 export { applyMode, applyTheme, type ModePreference } from "./apply.ts";
 export { clampChroma, contrast, css, flatten, fromHex, inGamut, inP3, type Oklch, solve } from "./color.ts";
 export { themeCss, variables } from "./css.ts";
