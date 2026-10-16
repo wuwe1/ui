@@ -24,6 +24,15 @@ import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx
 
 export type Story = { name: string; render: () => ReactNode };
 
+/** The sidebar: pages by group. A page missing here still shows, under Other */
+export const NAV: { label: string; pages: string[] }[] = [
+	{ label: "Foundations", pages: ["Theme"] },
+	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "MessageActions"] },
+	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
+	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
+	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
+];
+
 const row = "flex flex-wrap items-center gap-2";
 const col = "flex flex-col gap-3";
 

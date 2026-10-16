@@ -1,17 +1,23 @@
-// Showcase: the theme, and every state of every component.
+// Showcase: the theme, and every state of every component. A sidebar lists the pages; on phones it's a drawer. The spec of the page sits on the right (docs.tsx).
 // Open one state for a screenshot: ?p=<component>&s=<state>&mode=dark&w=390&bare=1
 import "./styles.css";
 import { type ReactNode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "../src/components/sidebar.tsx";
 import { Toaster } from "../src/components/toast.tsx";
 import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
 import { TooltipProvider } from "../src/components/tooltip.tsx";
+import { cn } from "../src/lib/utils.ts";
 import { applyMode } from "../src/theme/index.ts";
-import { STORIES } from "./stories.tsx";
+import { Docs, DocsToggle, useDocs } from "./docs.tsx";
+import { NAV, STORIES } from "./stories.tsx";
 import { ThemePage } from "./theme.tsx";
 
 const THEME_PAGE = "Theme";
 const WIDTHS = [["390", "Phone"], ["768", "Tablet"], ["0", "Full"]] as const;
+// Every page appears once: the ones NAV forgot go under Other
+const listed = new Set(NAV.flatMap((g) => g.pages));
+const GROUPS = [...NAV, { label: "Other", pages: Object.keys(STORIES).filter((p) => !listed.has(p)) }].filter((g) => g.pages.length);
 
 function useParam(key: string, fallback: string) {
 	const [v, setV] = useState(() => new URLSearchParams(location.search).get(key) ?? fallback);
@@ -25,7 +31,6 @@ function useParam(key: string, fallback: string) {
 }
 
 function Showcase() {
-	const pages = [THEME_PAGE, ...Object.keys(STORIES)];
 	const [p, setP] = useParam("p", THEME_PAGE);
 	const [s, setS] = useParam("s", "");
 	const [mode, setMode] = useParam("mode", matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -34,20 +39,9 @@ function Showcase() {
 	useEffect(() => applyMode(mode === "dark" ? "dark" : "light"), [mode]);
 	const stories = STORIES[p] ?? [];
 	const shown = s ? stories.filter((x) => x.name === s) : stories;
-	return (
-		<div className="flex min-h-svh flex-col bg-sidebar">
-			<header hidden={bare} className="sticky top-0 z-10 flex flex-col gap-2 border-b bg-sidebar px-4 py-2">
-				<div className="flex flex-wrap items-center gap-2">
-					<span className="mr-2 text-lg font-semibold tracking-tight">@wuwe1/ui</span>
-					<Pick value={p} onChange={(v) => { setP(v); setS(""); }} options={pages.map((n) => [n, n] as const)} />
-				</div>
-				<div className="flex flex-wrap items-center gap-2">
-					{p !== THEME_PAGE && <Pick value={s || "*"} onChange={(v) => setS(v === "*" ? "" : v)} options={[["*", "All states"], ...stories.map((x) => [x.name, x.name] as const)]} />}
-					<span className="ml-auto" />
-					<Pick value={mode} onChange={setMode} options={[["light", "Light"], ["dark", "Dark"]]} />
-					{p !== THEME_PAGE && <Pick value={w} onChange={setW} options={WIDTHS} />}
-				</div>
-			</header>
+	const docs = useDocs();
+	const page = (
+		<div className="min-h-0 flex-1 overflow-y-auto">
 			{p === THEME_PAGE ? (
 				<ThemePage />
 			) : (
@@ -61,11 +55,69 @@ function Showcase() {
 			)}
 		</div>
 	);
+	if (bare) return <div className="flex min-h-svh flex-col bg-background">{page}</div>;
+	return (
+		<SidebarProvider className="h-svh">
+			<Nav page={p} onPick={(v) => { setP(v); setS(""); }} />
+			<SidebarInset className="min-w-0 overflow-hidden">
+				<header className="flex shrink-0 flex-col gap-2 border-b px-3 py-2">
+					<div className="flex min-h-8 items-center gap-2">
+						<SidebarTrigger className="-ml-1" />
+						<span className="truncate text-sm font-medium">{p}</span>
+						<span className="ml-auto" />
+						<Pick value={mode} onChange={setMode} options={[["light", "Light"], ["dark", "Dark"]]} />
+						{p !== THEME_PAGE && <Pick value={w} onChange={setW} options={WIDTHS} className="hidden sm:flex" />}
+						{p !== THEME_PAGE && <DocsToggle open={docs.open} onOpenChange={docs.setOpen} />}
+					</div>
+					{p !== THEME_PAGE && stories.length > 1 && <Pick value={s || "*"} onChange={(v) => setS(v === "*" ? "" : v)} options={[["*", "All states"], ...stories.map((x) => [x.name, x.name] as const)]} />}
+				</header>
+				<div className="flex min-h-0 flex-1">
+					{page}
+					{p !== THEME_PAGE && <Docs page={p} states={stories.map((x) => x.name)} onState={setS} open={docs.open} wide={docs.wide} onOpenChange={docs.setOpen} />}
+				</div>
+			</SidebarInset>
+		</SidebarProvider>
+	);
 }
 
-function Pick({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: readonly (readonly [string, string])[] }) {
+/** The pages, by group, with how many states each has. Picking one on a phone closes the drawer */
+function Nav({ page, onPick }: { page: string; onPick: (p: string) => void }) {
+	const { setOpenMobile } = useSidebar();
 	return (
-		<ToggleGroup type="single" variant="outline" size="sm" value={value} onValueChange={(v) => v && onChange(v)} className="flex-wrap">
+		<Sidebar variant="inset">
+			<SidebarHeader>
+				<span className="px-2 pt-1 text-lg font-semibold tracking-tight">@wuwe1/ui</span>
+			</SidebarHeader>
+			<SidebarContent>
+				{GROUPS.map((g) => (
+					<SidebarGroup key={g.label}>
+						<SidebarGroupLabel>{g.label}</SidebarGroupLabel>
+						<SidebarMenu>
+							{g.pages.map((name) => (
+								<SidebarMenuItem key={name}>
+									<SidebarMenuButton
+										isActive={name === page}
+										onClick={() => {
+											onPick(name);
+											setOpenMobile(false);
+										}}
+									>
+										<span className="min-w-0 flex-1 truncate">{name}</span>
+										{STORIES[name] && <span className="shrink-0 text-2xs text-muted-foreground tabular-nums">{STORIES[name].length}</span>}
+									</SidebarMenuButton>
+								</SidebarMenuItem>
+							))}
+						</SidebarMenu>
+					</SidebarGroup>
+				))}
+			</SidebarContent>
+		</Sidebar>
+	);
+}
+
+function Pick({ value, onChange, options, className }: { value: string; onChange: (v: string) => void; options: readonly (readonly [string, string])[]; className?: string }) {
+	return (
+		<ToggleGroup type="single" variant="outline" size="sm" value={value} onValueChange={(v) => v && onChange(v)} className={cn("flex-wrap", className)}>
 			{options.map(([v, label]) => <ToggleGroupItem key={v} value={v}>{label}</ToggleGroupItem>)}
 		</ToggleGroup>
 	);
