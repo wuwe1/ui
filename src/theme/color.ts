@@ -62,11 +62,11 @@ export function srgb(o: Oklch): Rgb {
 /** #rrggbb or #rrggbbaa → OKLCH – for porting hand-picked colors */
 export function fromHex(hex: string): Oklch {
 	const n = hex.replace("#", "");
-	const v = [0, 2, 4].map((i) => decode(Number.parseInt(n.slice(i, i + 2), 16) / 255));
+	const [r, g, b_] = [0, 2, 4].map((i) => decode(Number.parseInt(n.slice(i, i + 2), 16) / 255)) as Rgb;
 	const alpha = n.length === 8 ? Number.parseInt(n.slice(6, 8), 16) / 255 : undefined;
-	const l_ = Math.cbrt(0.4122214708 * v[0] + 0.5363325363 * v[1] + 0.0514459929 * v[2]);
-	const m_ = Math.cbrt(0.2119034982 * v[0] + 0.6806995451 * v[1] + 0.1073969566 * v[2]);
-	const s_ = Math.cbrt(0.0883024619 * v[0] + 0.2817188376 * v[1] + 0.6299787005 * v[2]);
+	const l_ = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b_);
+	const m_ = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b_);
+	const s_ = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b_);
 	const L = 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_;
 	const a = 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_;
 	const b = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_;
@@ -78,8 +78,8 @@ export function fromHex(hex: string): Oklch {
 /** A translucent color over an opaque one, mixed in sRGB like browsers do */
 function over(fg: Oklch, bg: Rgb): Rgb {
 	const a = fg.alpha ?? 1;
-	const f = srgb(fg);
-	return [0, 1, 2].map((i) => a * f[i] + (1 - a) * bg[i]) as Rgb;
+	const [r, g, b] = srgb(fg);
+	return [a * r + (1 - a) * bg[0], a * g + (1 - a) * bg[1], a * b + (1 - a) * bg[2]];
 }
 
 /** Encoded sRGB (0–1) → OKLCH */
@@ -95,7 +95,7 @@ export function flatten(layer: Oklch, page: Oklch): Oklch {
 
 /** Relative luminance (WCAG 2): decode sRGB to linear, then weight */
 function luminanceOf(rgb: Rgb): number {
-	const [r, g, b] = rgb.map(decode);
+	const [r, g, b] = rgb.map(decode) as Rgb;
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
