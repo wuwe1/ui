@@ -48,6 +48,8 @@ What an agent remembers across sessions, grouped and editable – a master switc
 | `renderDetail` | `(m) => ReactNode` | plain text | Draws an open row's detail |
 | `onSource` | `(m) => void` | – | Makes the source a link |
 | `title` | `string` | 「Memory」 | Head and region name |
+| `placeholder` | `string` | 「Claude 应该记住的事…」 | The editor's text while empty – names the agent |
+| `emptyNote` | `string` | 「Claude 记下的偏好、反馈和项目情况会出现在这里」 | Under 「暂无 memory」 – what will show up, in the host's groups |
 | `loading` | `boolean` | – | Skeleton rows |
 | `undoFor` | `number` | `5000` | How long Undo stays, ms |
 

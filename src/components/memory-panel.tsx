@@ -34,6 +34,10 @@ type Props = {
 	/** Makes the source a link */
 	onSource?: (m: MemoryItem) => void;
 	title?: string;
+	/** The editor's placeholder – names the agent */
+	placeholder?: string;
+	/** Under 「暂无 memory」: what will show up here */
+	emptyNote?: string;
 	loading?: boolean;
 	undoFor?: number;
 	className?: string;
@@ -148,14 +152,14 @@ function Editor({ draft, groups, onSave, onCancel, withDetail, placeholder }: { 
 /** One memory: the text, its source and date, a 「已暂停」 tag; actions on hover and focus, always on touch; opens to its detail */
 function Row({ m, editing, leaving, groups, onEditStart, onEditEnd, props }: { m: MemoryItem; editing: boolean; leaving: boolean; groups: MemoryGroup[]; onEditStart: () => void; onEditEnd: () => void; props: Props }) {
 	const [open, setOpen] = useState(false);
-	const { onEdit, onPause, onForget, onSource, renderDetail } = props;
+	const { onEdit, onPause, onForget, onSource, renderDetail, placeholder = "" } = props;
 	if (editing)
 		return (
 			<Editor
 				draft={{ text: m.text, detail: m.detail ?? "", group: m.group }}
 				groups={groups}
 				withDetail={m.detail !== undefined}
-				placeholder="Claude 应该记住的事…"
+				placeholder={placeholder}
 				onCancel={onEditEnd}
 				onSave={(d) => {
 					const change: Partial<Draft> = {};
@@ -210,7 +214,22 @@ function Row({ m, editing, leaving, groups, onEditStart, onEditEnd, props }: { m
 }
 
 function MemoryPanel(props: Props) {
-	const { memories, groups, enabled = true, onEnabledChange, offNote = "关闭后不会使用或保存 memory，已有的不会删除", onAdd, onForget, onRestore, title = "Memory", loading, undoFor = 5000, className } = props;
+	const {
+		memories,
+		groups,
+		enabled = true,
+		onEnabledChange,
+		offNote = "关闭后不会使用或保存 memory，已有的不会删除",
+		onAdd,
+		onForget,
+		onRestore,
+		title = "Memory",
+		placeholder = "Claude 应该记住的事…",
+		emptyNote = "Claude 记下的偏好、反馈和项目情况会出现在这里",
+		loading,
+		undoFor = 5000,
+		className,
+	} = props;
 	const [group, setGroup] = useState("all");
 	const [query, setQuery] = useState("");
 	const [searching, setSearching] = useState(false);
@@ -242,7 +261,7 @@ function MemoryPanel(props: Props) {
 	const sections = group === "all" ? groups.map((g) => ({ g, items: shown.filter((m) => m.group === g.id) })).filter((s) => s.items.length) : [{ g: null, items: shown }];
 	const tray = editing || adding ? "Enter 保存，Shift + Enter 换行，Esc 取消" : trayLine(memories);
 	const row = (m: MemoryItem) => (
-		<Row key={m.id} m={m} editing={editing === m.id} leaving={leaving.includes(m.id)} groups={groups} onEditStart={() => { setAdding(false); setEditing(m.id); }} onEditEnd={() => setEditing(null)} props={{ ...props, onForget: onForget && forget }} />
+		<Row key={m.id} m={m} editing={editing === m.id} leaving={leaving.includes(m.id)} groups={groups} onEditStart={() => { setAdding(false); setEditing(m.id); }} onEditEnd={() => setEditing(null)} props={{ ...props, placeholder, onForget: onForget && forget }} />
 	);
 	return (
 		<section role="group" aria-label={title} className={cn("flex flex-col overflow-hidden rounded-xl border bg-muted/40", className)}>
@@ -275,7 +294,7 @@ function MemoryPanel(props: Props) {
 					) : !memories.length ? (
 						<div className="flex flex-col items-center gap-1 px-4 py-8 text-center">
 							<span className="text-sm">暂无 memory</span>
-							<span className="text-xs text-muted-foreground">Claude 记下的偏好、反馈和项目情况会出现在这里</span>
+							<span className="text-xs text-muted-foreground">{emptyNote}</span>
 						</div>
 					) : !shown.length ? (
 						<div className="px-4 py-6 text-center text-xs text-muted-foreground">暂无匹配「{query || chips.find((x) => x.id === group)?.label}」的 memory</div>
@@ -294,7 +313,7 @@ function MemoryPanel(props: Props) {
 									draft={{ text: "", detail: "", group: group !== "all" ? group : (groups[0]?.id ?? "") }}
 									groups={groups}
 									withDetail={false}
-									placeholder="Claude 应该记住的事…"
+									placeholder={placeholder}
 									onCancel={() => setAdding(false)}
 									onSave={(d) => { void onAdd({ ...d, text: d.text.trim() }); setAdding(false); }}
 								/>
