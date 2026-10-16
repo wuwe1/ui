@@ -1,3 +1,5 @@
+// shadcn/ui's Sidebar. Changed: on phones it's a drawer you swipe (drawer.tsx); with onWidthChange on SidebarProvider,
+// SidebarResizer lets you drag its edge to a width you keep
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
@@ -18,6 +20,7 @@ import { Drawer } from "./drawer.tsx"
 import * as drawer from "../lib/drawer.ts"
 
 const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH_PX = 256
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
@@ -30,6 +33,12 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  /** The desktop width in px – the dragged one, or the default 256 */
+  width: number
+  /** Null unless the width can be dragged (SidebarProvider got onWidthChange); null goes back to the default */
+  setWidth: ((width: number | null) => void) | null
+  minWidth: number
+  maxWidth: number
 }
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null)
@@ -47,6 +56,10 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  width: widthProp = null,
+  onWidthChange,
+  minWidth = 224,
+  maxWidth = 512,
   className,
   style,
   children,
@@ -55,6 +68,12 @@ function SidebarProvider({
   defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** Desktop width in px; null is the default 16rem. Keep it where you like – the provider only reports changes */
+  width?: number | null
+  /** Makes the width draggable (SidebarResizer): called on release with the new px, or null after a double-click back to the default */
+  onWidthChange?: (width: number | null) => void
+  minWidth?: number
+  maxWidth?: number
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
@@ -100,6 +119,9 @@ function SidebarProvider({
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed"
 
+  const width = widthProp ? Math.min(maxWidth, Math.max(minWidth, widthProp)) : null
+  const setWidth = onWidthChange ?? null
+
   const contextValue = React.useMemo<SidebarContextProps>(
     () => ({
       state,
@@ -109,8 +131,12 @@ function SidebarProvider({
       openMobile,
       setOpenMobile,
       toggleSidebar,
+      width: width ?? SIDEBAR_WIDTH_PX,
+      setWidth,
+      minWidth,
+      maxWidth,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, width, setWidth, minWidth, maxWidth]
   )
 
   return (
@@ -119,13 +145,13 @@ function SidebarProvider({
         data-slot="sidebar-wrapper"
         style={
           {
-            "--sidebar-width": SIDEBAR_WIDTH,
+            "--sidebar-width": width ? `${width}px` : SIDEBAR_WIDTH,
             "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
             ...style,
           } as React.CSSProperties
         }
         className={cn(
-          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
+          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar data-resizing:cursor-col-resize data-resizing:select-none",
           className
         )}
         {...props}
@@ -198,7 +224,7 @@ function Sidebar({
       <div
         data-slot="sidebar-gap"
         className={cn(
-          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear group-data-resizing/sidebar-wrapper:transition-none",
           "group-data-[collapsible=offcanvas]:w-0",
           "group-data-[side=right]:rotate-180",
           variant === "floating" || variant === "inset"
@@ -210,7 +236,7 @@ function Sidebar({
         data-slot="sidebar-container"
         data-side={side}
         className={cn(
-          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear group-data-resizing/sidebar-wrapper:transition-none data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
@@ -277,6 +303,78 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
         className
       )}
+      {...props}
+    />
+  )
+}
+
+/**
+ * The handle on the sidebar's inner edge (desktop, expanded, resizable only): drag it and the width follows – straight into the CSS variable,
+ * so nothing re-renders while dragging – then onWidthChange gets it on release. Double-click goes back to the default; ←→ move it 32px.
+ * Put it inside Sidebar
+ */
+function SidebarResizer({ className, ...props }: React.ComponentProps<"div">) {
+  const { isMobile, state, width, setWidth, minWidth, maxWidth } = useSidebar()
+  const ref = React.useRef<HTMLDivElement>(null)
+  const start = React.useRef({ x: 0, w: 0 })
+  const [drag, setDrag] = React.useState(false)
+  if (isMobile || state === "collapsed" || !setWidth) return null
+  const wrapper = () => ref.current?.closest<HTMLElement>("[data-slot=sidebar-wrapper]") ?? null
+  // The right sidebar grows to the left
+  const sign = () => (ref.current?.closest("[data-side]")?.getAttribute("data-side") === "right" ? -1 : 1)
+  const clamp = (w: number) => Math.round(Math.min(maxWidth, Math.max(minWidth, w)))
+  const show = (w: number | null) => wrapper()?.style.setProperty("--sidebar-width", w ? `${w}px` : SIDEBAR_WIDTH)
+  const now = () => ref.current?.closest("[data-slot=sidebar-container]")?.getBoundingClientRect().width ?? width
+  const end = (save: boolean) => {
+    setDrag(false)
+    wrapper()?.removeAttribute("data-resizing")
+    // Cancelled: back to the width React holds
+    if (save) setWidth(clamp(now()))
+    else show(width)
+  }
+  return (
+    <div
+      ref={ref}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="调整侧栏宽度"
+      aria-valuenow={width}
+      aria-valuemin={minWidth}
+      aria-valuemax={maxWidth}
+      title="拖动调整宽度，双击恢复默认"
+      tabIndex={0}
+      data-slot="sidebar-resizer"
+      data-drag={drag || undefined}
+      className={cn(
+        "absolute inset-y-0 z-20 w-2 cursor-col-resize touch-none outline-none group-data-[side=left]:-right-1 group-data-[side=right]:-left-1",
+        "after:absolute after:inset-y-0 after:left-[3px] after:w-0.5 after:transition-colors hover:after:bg-ring focus-visible:after:bg-ring data-drag:after:bg-ring",
+        className
+      )}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return
+        e.preventDefault()
+        e.currentTarget.setPointerCapture(e.pointerId)
+        start.current = { x: e.clientX, w: now() }
+        wrapper()?.setAttribute("data-resizing", "")
+        setDrag(true)
+      }}
+      onPointerMove={(e) => {
+        if (drag) show(clamp(start.current.w + sign() * (e.clientX - start.current.x)))
+      }}
+      onPointerUp={() => drag && end(true)}
+      onPointerCancel={() => drag && end(false)}
+      onDoubleClick={() => {
+        show(null)
+        setWidth(null)
+      }}
+      onKeyDown={(e) => {
+        const d = e.key === "ArrowRight" ? 32 : e.key === "ArrowLeft" ? -32 : 0
+        if (!d) return
+        e.preventDefault()
+        const w = clamp(now() + sign() * d)
+        show(w)
+        setWidth(w)
+      }}
       {...props}
     />
   )
@@ -677,6 +775,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizer,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,

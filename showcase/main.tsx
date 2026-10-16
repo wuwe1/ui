@@ -5,7 +5,7 @@ import "./styles.css";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Outline, useInView } from "../src/components/outline.tsx";
 import { createRoot } from "react-dom/client";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "../src/components/sidebar.tsx";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarResizer, SidebarTrigger, useSidebar } from "../src/components/sidebar.tsx";
 import { Toaster } from "../src/components/toast.tsx";
 import { SegmentedControl } from "../src/components/segmented-control.tsx";
 import { TooltipProvider } from "../src/components/tooltip.tsx";
@@ -36,6 +36,12 @@ function Showcase() {
 	const [s, setS] = useParam("s", "");
 	const [mode, setMode] = useParam("mode", matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 	const [w, setW] = useParam("w", "390");
+	// The sidebar's dragged width, kept on this device
+	const [side, setSide] = useState(() => Number(localStorage.getItem("ui:sidebar-width")) || null);
+	const keepSide = (v: number | null) => {
+		setSide(v);
+		v ? localStorage.setItem("ui:sidebar-width", String(v)) : localStorage.removeItem("ui:sidebar-width");
+	};
 	const bare = new URLSearchParams(location.search).has("bare");
 	useEffect(() => applyMode(mode === "dark" ? "dark" : "light"), [mode]);
 	const stories = STORIES[p] ?? [];
@@ -72,7 +78,7 @@ function Showcase() {
 	);
 	if (bare) return <div className="flex min-h-svh flex-col bg-background">{page}</div>;
 	return (
-		<SidebarProvider className="h-svh">
+		<SidebarProvider className="h-svh" width={side} onWidthChange={keepSide}>
 			<Nav page={p} onPick={(v) => { setP(v); setS(""); }} />
 			<SidebarInset className="min-w-0 overflow-hidden">
 				<header className="flex shrink-0 flex-col border-b px-3 py-2">
@@ -125,6 +131,7 @@ function Nav({ page, onPick }: { page: string; onPick: (p: string) => void }) {
 					</SidebarGroup>
 				))}
 			</SidebarContent>
+			<SidebarResizer />
 		</Sidebar>
 	);
 }
