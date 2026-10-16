@@ -1,12 +1,12 @@
-// What the theme guarantees: in every built-in theme and both modes, each text token meets its contrast on every surface it sits on
-// (needs in roles.ts; translucent surfaces flattened over background); tokens.css matches the themes; the color math matches WCAG's examples
+// What the theme guarantees: in every built-in theme and both modes, each text and line token meets its contrast on every surface it sits on
+// (needs in roles.ts, per mode for lines; translucent surfaces flattened over background); tokens.css matches the themes; the color math matches WCAG's examples
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { contrast, css, flatten, fromHex, inGamut, inP3 } from "../src/theme/color.ts";
 import { themeCss } from "../src/theme/css.ts";
-import { type Mode, roles } from "../src/theme/roles.ts";
+import { type Mode, needOf, roles } from "../src/theme/roles.ts";
 import { THEMES } from "../src/theme/themes.ts";
 
 test("color math: black on white is 21:1, #767676 on white 4.54 (the usual WCAG example), round trips hold", () => {
@@ -20,14 +20,15 @@ test("color math: black on white is 21:1, #767676 on white 4.54 (the usual WCAG 
 
 for (const theme of THEMES) {
 	for (const mode of ["light", "dark"] as Mode[]) {
-		test(`${theme.name} ${mode}: every text token meets its contrast on its surfaces`, () => {
+		test(`${theme.name} ${mode}: every text and line token meets its contrast on its surfaces`, () => {
 			const list = roles(theme);
 			const value = new Map(list.map((r) => [r.name, r.value[mode]]));
 			const page = value.get("background");
 			assert.ok(page);
 			for (const r of list) {
-				if (!r.needs) continue;
-				const [target, unders] = r.needs;
+				const target = needOf(r, mode);
+				if (!r.needs || target === undefined) continue;
+				const unders = r.needs[1];
 				for (const u of unders) {
 					const under = value.get(u);
 					assert.ok(under, `${r.name} sits on ${u}, which doesn't exist`);

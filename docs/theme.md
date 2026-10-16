@@ -19,8 +19,11 @@ Components use only the last layer: `bg-background`, `text-muted-foreground`, `t
 
 ## How colors are derived
 
-- Surfaces – fixed lightness steps: `sidebar` < `background` < `card`; `raised` – a pill on a `muted` track – is white like a card in light, a step above the track in dark
+- Surfaces – fixed lightness steps. Light brightens inward: `sidebar` < `background` < `card`. Dark lifts `sidebar` above both, so the inset panel reads as set into it; `SidebarInset` draws its edge with `ring-border/55`. Menus over the sidebar sit darker and keep their border
+- `raised` – a pill on a `muted` track – is white like a card in light, a step above the track in dark
 - Text – muted text and every `*-strong` are solved for contrast: only lightness moves in OKLCH, until every surface gives 4.5:1
+- Lines – solved the same way, on every surface they sit on: `input` 3:1 in both modes (WCAG 1.4.11); `border` and `sidebar-border` 1.8:1 in dark, as drawn in light – about 1.2:1
+- Fields fill with `field`, the gray inputs had before, so the stronger edge leaves the fill alone
 - Layers – `muted` and `accent` are translucent black or white, so they show on any surface
 - Signals – three shades: solid for dots and icons, `-strong` for text, `-subtle` for tints
 - Wide gamut – colors inside P3 ship as they are; only colors beyond P3 are pulled in
@@ -48,14 +51,13 @@ Built on `light-dark()`: Safari 17.5+, Chrome 123+, Firefox 120+.
 | | Before – hand-picked, after affectUI | Now |
 |---|---|---|
 | Values | One hex set per mode | Derived from knobs |
-| Contrast | Muted text on the sidebar 4.3:1, amber text 2.1:1 | Held by tests, all ≥ 4.5:1 |
+| Contrast | Muted text on the sidebar 4.3:1, amber text 2.1:1 | Held by tests: text ≥ 4.5:1, input borders 3:1, dark dividers 1.8:1 |
 | Signal as text | The dot's shade | Its own `-strong` |
 | Scope | Whole page | Any subtree |
 
-Kept: four grays brightening inward, translucent hover layers, grayscale by default.
+Kept: four grays – brightening inward in light, the sidebar on top in dark – translucent hover layers, grayscale by default.
 
 ## Open questions
 
-- Input borders – 1.2:1 today; WCAG 1.4.11 asks 3:1
 - Focus ring – translucent, under 3:1
 - Density – 44px rows on phones, 32px on desktop; a knob or not

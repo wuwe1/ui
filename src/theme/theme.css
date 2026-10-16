@@ -33,6 +33,7 @@
 	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
+	--color-field: var(--field);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-ring: var(--ring);
 	--color-sidebar-ring: var(--sidebar-ring);

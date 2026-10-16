@@ -7,7 +7,7 @@ import { StatusIcon } from "../src/components/status-icon.tsx";
 import { toast } from "../src/components/toast.tsx";
 import { SegmentedControl } from "../src/components/segmented-control.tsx";
 import { cn } from "../src/lib/utils.ts";
-import { base, contrast, flatten, type Mode, type Role, roles, SIGNALS, THEMES, type ThemeInput, type Tint, variables } from "../src/theme/index.ts";
+import { base, contrast, flatten, type Mode, needOf, type Role, roles, SIGNALS, THEMES, type ThemeInput, type Tint, variables } from "../src/theme/index.ts";
 
 const MODES: Mode[] = ["light", "dark"];
 const MODE_NAME: Record<Mode, string> = { light: "Light", dark: "Dark" };
@@ -17,7 +17,7 @@ function groupOf(name: string): string {
 	if (name.startsWith("series")) return "Series";
 	if ((SIGNALS as readonly string[]).some((s) => name === s || name.startsWith(`${s}-`))) return "Signals";
 	if (name.endsWith("foreground")) return "Text";
-	if (["secondary", "muted", "accent", "sidebar-accent"].includes(name)) return "Overlays";
+	if (["secondary", "muted", "accent", "sidebar-accent", "field"].includes(name)) return "Overlays";
 	if (["border", "input", "sidebar-border", "ring", "sidebar-ring"].includes(name)) return "Borders and focus";
 	return "Surfaces";
 }
@@ -124,7 +124,7 @@ function Preview({ mode }: { mode: Mode }) {
 	);
 }
 
-/** One token: name, use, both modes; text tokens show contrast against their worst surface */
+/** One token: name, use, both modes; text and line tokens show contrast against their worst surface, in the modes that ask for one */
 function Row({ r, list, vars }: { r: Role; list: Role[]; vars: CSSProperties }) {
 	const value = new Map(list.map((x) => [x.name, x.value]));
 	return (
@@ -132,12 +132,13 @@ function Row({ r, list, vars }: { r: Role; list: Role[]; vars: CSSProperties }) 
 			<code className="truncate font-mono text-xs">--{r.name}</code>
 			<span className="hidden text-xs text-muted-foreground sm:block">{r.doc}</span>
 			{MODES.map((m) => {
-				const worst = r.needs ? Math.min(...r.needs[1].map((u) => contrast(r.value[m], flatten(value.get(u)?.[m] ?? r.value[m], value.get("background")?.[m] ?? r.value[m])))) : null;
-				const ok = worst === null || worst >= (r.needs?.[0] ?? 0) - 0.01;
+				const target = needOf(r, m);
+				const worst = r.needs && target !== undefined ? Math.min(...r.needs[1].map((u) => contrast(r.value[m], flatten(value.get(u)?.[m] ?? r.value[m], value.get("background")?.[m] ?? r.value[m])))) : null;
+				const ok = worst === null || worst >= (target ?? 0) - 0.01;
 				return (
 					<div key={m} className={cn(m, "flex items-center gap-2 rounded-md p-1")} style={vars}>
 						<Sample r={r} />
-						<span className={cn("flex w-14 items-center gap-0.5 text-2xs tabular-nums", ok ? "text-muted-foreground" : "text-destructive-strong")} title={worst === null ? undefined : `Worst of ${r.needs?.[1].join(", ")}; needs ${r.needs?.[0]}`}>
+						<span className={cn("flex w-14 items-center gap-0.5 text-2xs tabular-nums", ok ? "text-muted-foreground" : "text-destructive-strong")} title={worst === null ? undefined : `Worst of ${r.needs?.[1].join(", ")}; needs ${target}`}>
 							{worst !== null && (ok ? <Check className="size-3" /> : <X className="size-3" />)}
 							{worst?.toFixed(1)}
 						</span>
