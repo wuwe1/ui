@@ -1,11 +1,12 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { AppWindow, Bell, MoveUpRight, CircleAlert, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { AppWindow, Bell, MoveUpRight, CircleAlert, FileCode, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
+import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
 import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
+import { Combobox, type ComboboxOption } from "../src/components/combobox.tsx";
 import { ContextWindow, type ContextPart } from "../src/components/context-window.tsx";
 import { Composer } from "../src/components/composer.tsx";
 import { ComposerSettings } from "../src/components/composer-settings.tsx";
@@ -49,6 +50,7 @@ export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
 	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff", "DecisionInbox"] },
+	{ label: "Inputs", pages: ["Combobox"] },
 	{ label: "Data", pages: ["DataGrid"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
@@ -113,6 +115,24 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Invalid", render: () => <div className={col}><Input aria-invalid defaultValue="no-such-branch" /><span className="text-xs text-destructive-strong">分支不存在</span></div> },
 		{ name: "With icon", render: () => <InputGroup><InputGroupAddon><Search /></InputGroupAddon><InputGroupInput placeholder="搜索…" /></InputGroup> },
 		{ name: "Multiline", render: () => <Textarea placeholder="继续…" rows={3} /> },
+	],
+	Combobox: [
+		{ name: "Default", render: () => <div className="max-w-md"><Reviewers start={["wangxm", "chenyu"]} /></div> },
+		{ name: "Open", render: () => <div className="max-w-md"><Reviewers start={["wangxm", "chenyu"]} defaultOpen /></div> },
+		{ name: "Searching", render: () => <div className="max-w-md"><Act run={(el) => type(el.querySelector("input"), "设计")}><Reviewers start={["wangxm"]} /></Act></div> },
+		{ name: "No matches", render: () => <div className="max-w-md"><Act run={(el) => type(el.querySelector("input"), "zzz")}><Reviewers start={["wangxm"]} /></Act></div> },
+		{ name: "Create", render: () => <div className="max-w-md"><Act run={(el) => type(el.querySelector("input"), "Alex")}><Reviewers start={["wangxm"]} creatable createLabel={(t) => `邀请 “${t}”`} /></Act></div> },
+		{ name: "Many", render: () => <div className="max-w-md"><Reviewers start={["wangxm", "lina", "chenyu", "maya", "liuyang", "zhaolei", "sunting"]} maxChips={4} /></div> },
+		{ name: "Armed", render: () => <div className="max-w-md"><Act run={(el) => backspace(el.querySelector("input"))}><Reviewers start={["wangxm", "lina", "chenyu"]} /></Act></div> },
+		{ name: "Single", render: () => <div className="max-w-md"><Reviewers start={["zhaolei"]} multiple={false} label="负责人" /></div> },
+		{ name: "Empty", render: () => <div className={cn(col, "max-w-md")}><Reviewers start={[]} placeholder="添加审阅人…" /><Combobox options={[]} label="标签" emptyText="暂无标签：输入名字后按 ↵ 新建" creatable defaultOpen inline /></div> },
+		{ name: "Icons", render: () => <div className="max-w-md"><Files /></div> },
+		{ name: "Loading", render: () => <div className="max-w-md"><Combobox options={null} label="审阅人" defaultOpen inline /></div> },
+		{ name: "Error", render: () => <div className="max-w-md"><Combobox options={null} error="加载成员失败：网络连接已断开" label="审阅人" defaultOpen inline /></div> },
+		{ name: "Disabled", render: () => <div className={cn(col, "max-w-md")}><Reviewers start={["wangxm", "chenyu"]} disabled /><Reviewers start={["wangxm"]} options={PEOPLE.map((p) => (p.value === "lina" || p.value === "zhoujie" ? { ...p, hint: "请假中", disabled: true } : p))} defaultOpen inline /></div> },
+		{ name: "Long", render: () => <div className="w-72"><Combobox options={LONG_FILES} defaultValue={LONG_FILES.map((f) => f.value)} label="要读的文件" defaultOpen inline /></div> },
+		{ name: "Inline", render: () => <div className={cn(col, "max-w-md")}><Reviewers start={["wangxm"]} defaultOpen inline /><p className="text-md text-muted-foreground">列表在页面流里展开，把这一行推下去。</p></div> },
+		{ name: "Live", render: () => <div className="max-w-md"><LiveReviewers /></div> },
 	],
 	Tabs: [
 		{
@@ -1363,6 +1383,57 @@ function NoBrowser() {
 }
 
 /** Runs a step on the story once it's on screen – focus a blank, type a search, open the editor */
+const PEOPLE: ComboboxOption[] = [
+	{ value: "wangxm", label: "王小明", hint: "设计负责人", group: "设计", avatar: true, keywords: ["wangxiaoming", "wxm"] },
+	{ value: "lina", label: "李娜", hint: "产品设计", group: "设计", avatar: true, keywords: ["lina"] },
+	{ value: "zhoujie", label: "周杰", hint: "品牌设计", group: "设计", avatar: true, keywords: ["zhoujie"] },
+	{ value: "chenyu", label: "陈雨", hint: "前端", group: "工程", avatar: true, keywords: ["chenyu"] },
+	{ value: "maya", label: "Maya Chen", hint: "iOS", group: "工程", avatar: true },
+	{ value: "liuyang", label: "刘洋", hint: "后端", group: "工程", avatar: true, keywords: ["liuyang"] },
+	{ value: "sara", label: "Sara Okafor", hint: "基础设施", group: "工程", avatar: true },
+	{ value: "zhaolei", label: "赵磊", hint: "产品负责人", group: "产品", avatar: true, keywords: ["zhaolei"] },
+	{ value: "sunting", label: "孙婷", hint: "产品经理", group: "产品", avatar: true, keywords: ["sunting"] },
+	{ value: "guoqiang", label: "郭强", hint: "数据分析", group: "产品", avatar: true, keywords: ["guoqiang"] },
+];
+/** Reviewers for a pull request: people in three groups, picked by name, role or pinyin */
+function Reviewers({ start, options = PEOPLE, label = "审阅人", ...rest }: { start: string[]; options?: ComboboxOption[]; label?: string } & Omit<ComponentProps<typeof Combobox>, "options" | "defaultValue">) {
+	return <Combobox options={options} defaultValue={start} label={label} placeholder="添加审阅人…" {...rest} />;
+}
+const FILES_TO_READ: ComboboxOption[] = [
+	{ value: "web/src/components/composer.tsx", label: "composer.tsx", hint: "web/src/components", icon: FileCode, group: "这一轮改过" },
+	{ value: "server/runs.ts", label: "runs.ts", hint: "server", icon: FileCode, group: "这一轮改过" },
+	{ value: "docs/product.md", label: "product.md", hint: "docs", icon: FileText, group: "这一轮改过" },
+	{ value: "web/src/lib/match.ts", label: "match.ts", hint: "web/src/lib", icon: FileCode, group: "相关" },
+	{ value: "web/src/components/browse.tsx", label: "browse.tsx", hint: "web/src/components", icon: FileCode, group: "相关" },
+	{ value: "test/block.test.ts", label: "block.test.ts", hint: "test", icon: FileCode, group: "相关" },
+	{ value: "shared/block.ts", label: "block.ts", hint: "shared", icon: FileCode, group: "相关" },
+	{ value: "CLAUDE.md", label: "CLAUDE.md", hint: "仓库根目录", icon: FileText, group: "相关" },
+];
+/** The files an agent should read before it starts – icons, paths as hints */
+function Files() {
+	return <Combobox options={FILES_TO_READ} defaultValue={["web/src/components/composer.tsx", "docs/product.md"]} label="要读的文件" placeholder="搜索文件…" />;
+}
+const LONG_FILES: ComboboxOption[] = [
+	{ value: "a", label: "把导出的 PDF 换成按章节分页、目录可点、页眉带书名.md", hint: "penna › docs/plans/export", icon: FileText },
+	{ value: "b", label: "very-long-component-name-that-keeps-going.tsx", hint: "web/src/components/settings/advanced/experimental", icon: FileCode },
+	{ value: "c", label: "notes.md", hint: "a/very/deeply/nested/folder/that/goes/on/and/on/and/on", icon: FileText },
+];
+/** The host changes the picks: one joins, another leaves, every 1.4 seconds */
+function LiveReviewers() {
+	const steps = [["wangxm", "chenyu"], ["wangxm", "chenyu", "zhaolei"], ["wangxm", "zhaolei"], ["wangxm", "zhaolei", "lina", "sara"], ["zhaolei", "lina"]];
+	const [k, setK] = useState(0);
+	useEffect(() => {
+		const t = setInterval(() => setK((x) => (x + 1) % steps.length), 1400);
+		return () => clearInterval(t);
+	}, []);
+	return <Combobox options={PEOPLE} value={steps[k]} label="审阅人" />;
+}
+/** Backspace in an empty field: React hears the native keydown */
+const backspace = (input: HTMLInputElement | null) => {
+	input?.focus();
+	input?.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+};
+
 function Act({ run, children }: { run: (el: HTMLElement) => void; children: ReactNode }) {
 	const ref = useRef<HTMLDivElement>(null);
 	useEffect(() => {
