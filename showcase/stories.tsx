@@ -1,6 +1,6 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
 import { AppWindow, Bell, CircleAlert, FileText, GitFork, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
 import { Badge } from "../src/components/badge.tsx";
@@ -11,6 +11,7 @@ import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } fr
 import { Elapsed } from "../src/components/elapsed.tsx";
 import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
 import { Input } from "../src/components/input.tsx";
+import { Outline, useInView } from "../src/components/outline.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
 import { MemoryPanel, type MemoryGroup, type MemoryItem } from "../src/components/memory-panel.tsx";
@@ -34,6 +35,7 @@ export type Story = { name: string; render: () => ReactNode };
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
+	{ label: "Navigation", pages: ["Outline"] },
 	{ label: "Agent", pages: ["Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
@@ -198,6 +200,12 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Long", render: () => <AgentInbox items={LONG_RUNS} onOpen={() => {}} /> },
 		{ name: "Loading", render: () => <AgentInbox items={null} /> },
 		{ name: "Empty", render: () => <AgentInbox items={[]} empty={<InboxEmpty><Button variant="outline" size="sm"><SquarePen />新会话</Button></InboxEmpty>} /> },
+	],
+	Outline: [
+		{ name: "Default", render: () => <Doc n={12} /> },
+		{ name: "Few", render: () => <Doc n={3} /> },
+		{ name: "Many", render: () => <Doc n={240} /> },
+		{ name: "Long lines", render: () => <Doc n={10} long /> },
 	],
 	ContextWindow: [
 		{ name: "Loading", render: () => <ContextWindow parts={null} limit={200_000} /> },
@@ -493,6 +501,33 @@ function Runs({ open, loadingSteps, live }: { open?: boolean; loadingSteps?: boo
 				onOpen={() => toast("打开会话")}
 				onToggle={(it, on) => { if (on && !loaded.has(it.id)) setTimeout(() => setLoaded((l) => new Set([...l, it.id])), 600); }}
 			/>
+		</div>
+	);
+}
+
+const PROMPTS = ["把首页改成 Inbox", "确认卡片换成库里的", "Memory 分组能拖着滚", "Context Window 压缩时扫光", "加载用 Skeleton", "目录做成 Outline", "补 StatusIcon 的规格", "截图看手机深色", "提交", "下一个搬什么"];
+/** A scroll box with n messages and an Outline on its right edge, wired like a host would */
+function Doc({ n, long }: { n: number; long?: boolean }) {
+	const box = useRef<HTMLDivElement>(null);
+	const targets = () => [...(box.current?.querySelectorAll<HTMLElement>("[data-msg]") ?? [])];
+	const { view } = useInView(box, targets, [n]);
+	const label = (i: number) => (long ? `${PROMPTS[i % PROMPTS.length]}，再写长一点：看看两行截断、浮出来的那条三行截断，和目录里怎么折行` : (PROMPTS[i % PROMPTS.length] ?? ""));
+	const jump = (i: number) => {
+		const el = targets()[i];
+		const b = box.current;
+		if (el && b) b.scrollTo({ top: b.scrollTop + el.getBoundingClientRect().top - b.getBoundingClientRect().top - 12, behavior: "smooth" });
+	};
+	return (
+		<div className="relative h-96 overflow-hidden rounded-lg border">
+			<div ref={box} className="h-full overflow-y-auto px-4 py-3 pr-9">
+				{Array.from({ length: n }, (_, i) => (
+					<div key={i} data-msg className="flex flex-col gap-1.5 pb-6">
+						<div className="w-fit max-w-[80%] self-end rounded-xl bg-muted px-3 py-2 text-sm">{label(i)}</div>
+						<p className="text-xs text-muted-foreground">Claude 的回复，几行字，撑出一点高度。{"改好了，截图在 /tmp。".repeat(1 + (i % 3))}</p>
+					</div>
+				))}
+			</div>
+			{n >= 2 && <Outline items={Array.from({ length: n }, (_, i) => ({ id: String(i), label: label(i) }))} view={view} onJump={jump} title="目录" description={`你的 ${n} 条消息`} scroller={box} className="absolute top-2 right-0 bottom-2" />}
 		</div>
 	);
 }

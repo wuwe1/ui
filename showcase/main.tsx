@@ -1,7 +1,9 @@
 // Showcase: the theme, and every state of every component. A sidebar lists the pages; on phones it's a drawer. The spec of the page sits on the right (docs.tsx).
+// An Outline of the states runs down the stories' right edge; each state's name has 「只看这个」, which shows it alone.
 // Open one state for a screenshot: ?p=<component>&s=<state>&mode=dark&w=390&bare=1
 import "./styles.css";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
+import { Outline, useInView } from "../src/components/outline.tsx";
 import { createRoot } from "react-dom/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "../src/components/sidebar.tsx";
 import { Toaster } from "../src/components/toast.tsx";
@@ -40,18 +42,32 @@ function Showcase() {
 	const stories = STORIES[p] ?? [];
 	const shown = s ? stories.filter((x) => x.name === s) : stories;
 	const docs = useDocs();
+	const scroller = useRef<HTMLDivElement>(null);
+	const targets = () => [...(scroller.current?.querySelectorAll<HTMLElement>("[data-story]") ?? [])];
+	const { view, long } = useInView(scroller, targets, [p, s, w]);
+	// Scroll only the stories: scrollIntoView would move the whole page
+	const jump = (i: number) => {
+		const el = targets()[i];
+		const box = scroller.current;
+		if (el && box) box.scrollTo({ top: box.scrollTop + el.getBoundingClientRect().top - box.getBoundingClientRect().top - 16, behavior: "smooth" });
+	};
 	const page = (
-		<div className="min-h-0 flex-1 overflow-y-auto">
-			{p === THEME_PAGE ? (
-				<ThemePage />
-			) : (
-				<main className="flex flex-col items-center gap-8 px-4 py-6">
-					{shown.map((x) => (
-						<Frame key={x.name} name={x.name} width={Number(w)}>
-							{x.render()}
-						</Frame>
-					))}
-				</main>
+		<div className="relative flex min-h-0 min-w-0 flex-1">
+			<div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
+				{p === THEME_PAGE ? (
+					<ThemePage />
+				) : (
+					<main className="flex flex-col items-center gap-8 px-4 py-6 pr-8">
+						{shown.map((x) => (
+							<Frame key={x.name} name={x.name} width={Number(w)} alone={!!s} many={stories.length > 1} onAlone={(a) => setS(a ? x.name : "")}>
+								{x.render()}
+							</Frame>
+						))}
+					</main>
+				)}
+			</div>
+			{!bare && p !== THEME_PAGE && shown.length > 1 && long && (
+				<Outline items={shown.map((x) => ({ id: x.name, label: x.name }))} view={view} onJump={jump} title="States" description={`${shown.length} states`} scroller={scroller} numbered={false} className="absolute top-2 right-0 bottom-2" />
 			)}
 		</div>
 	);
@@ -60,7 +76,7 @@ function Showcase() {
 		<SidebarProvider className="h-svh">
 			<Nav page={p} onPick={(v) => { setP(v); setS(""); }} />
 			<SidebarInset className="min-w-0 overflow-hidden">
-				<header className="flex shrink-0 flex-col gap-2 border-b px-3 py-2">
+				<header className="flex shrink-0 flex-col border-b px-3 py-2">
 					<div className="flex min-h-8 items-center gap-2">
 						<SidebarTrigger className="-ml-1" />
 						<span className="truncate text-sm font-medium">{p}</span>
@@ -69,7 +85,6 @@ function Showcase() {
 						{p !== THEME_PAGE && <Pick value={w} onChange={setW} options={WIDTHS} className="hidden sm:flex" />}
 						{p !== THEME_PAGE && <DocsToggle open={docs.open} onOpenChange={docs.setOpen} />}
 					</div>
-					{p !== THEME_PAGE && stories.length > 1 && <Pick value={s || "*"} onChange={(v) => setS(v === "*" ? "" : v)} options={[["*", "All states"], ...stories.map((x) => [x.name, x.name] as const)]} />}
 				</header>
 				<div className="flex min-h-0 flex-1">
 					{page}
@@ -123,11 +138,18 @@ function Pick({ value, onChange, options, className }: { value: string; onChange
 	);
 }
 
-/** One state: its name, then a frame on the content surface (background) at the picked width */
-function Frame({ name, width, children }: { name: string; width: number; children: ReactNode }) {
+/** One state: its name and 「只看这个」 (or 「看全部」 when it's alone), then a frame on the content surface (background) at the picked width */
+function Frame({ name, width, alone, many, onAlone, children }: { name: string; width: number; alone: boolean; many: boolean; onAlone: (alone: boolean) => void; children: ReactNode }) {
 	return (
 		<section data-story={name} className="flex w-full flex-col gap-2" style={width ? { maxWidth: width } : undefined}>
-			<h2 className="px-1 text-2xs text-muted-foreground">{name}</h2>
+			<h2 className="flex items-baseline gap-2 px-1 text-2xs text-muted-foreground">
+				{name}
+				{(many || alone) && (
+					<button type="button" onClick={() => onAlone(!alone)} className="ml-auto rounded-sm text-muted-foreground/70 outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring">
+						{alone ? "看全部" : "只看这个"}
+					</button>
+				)}
+			</h2>
 			<div data-frame className="flex min-h-24 flex-col overflow-hidden rounded-xl border bg-background p-4">{children}</div>
 		</section>
 	);
