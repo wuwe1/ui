@@ -7,6 +7,8 @@ import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
 import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } from "../src/components/connection-card.tsx";
+import { Elapsed } from "../src/components/elapsed.tsx";
+import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
 import { Input } from "../src/components/input.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
@@ -31,7 +33,7 @@ export type Story = { name: string; render: () => ReactNode };
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
-	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "MessageActions", "ConnectionCard", "MemoryPanel"] },
+	{ label: "Agent", pages: ["Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -185,6 +187,16 @@ export const STORIES: Record<string, Story[]> = {
 				</div>
 			),
 		},
+	],
+	Inbox: [
+		{ name: "Default", render: () => <Runs /> },
+		{ name: "Open", render: () => <Runs open /> },
+		{ name: "Steps loading", render: () => <Runs loadingSteps /> },
+		{ name: "Live", render: () => <Runs live /> },
+		{ name: "Many", render: () => <AgentInbox items={MANY_RUNS} onOpen={() => {}} /> },
+		{ name: "Long", render: () => <AgentInbox items={LONG_RUNS} onOpen={() => {}} /> },
+		{ name: "Loading", render: () => <AgentInbox items={null} /> },
+		{ name: "Empty", render: () => <AgentInbox items={[]} empty={<InboxEmpty><Button variant="outline" size="sm"><SquarePen />新会话</Button></InboxEmpty>} /> },
 	],
 	MessageActions: [
 		{ name: "Quiet", render: () => <Reply time /> },
@@ -418,6 +430,62 @@ const DIFF = (
 		))}
 	</div>
 );
+
+const T = Date.now();
+const MIN = 60_000;
+/** Runs as a host would feed them; steps arrive 600ms after a row opens, like a fetch */
+const RUNS: (InboxItem & { all: InboxItem["steps"] })[] = [
+	{ id: "s1", status: "waiting", title: "修 block 手机闪退", place: "mixer", label: "待确认", at: T - MIN, all: [{ label: "Read web/src/block/sandbox.tsx", time: "6 分钟前" }, { label: "Edit 默认导出撞名时去掉名字", time: "4 分钟前" }, { label: "Bash pnpm test", time: "2 分钟前" }] },
+	{ id: "s2", status: "error", title: "迁移 CI 到 macOS 15", place: "penna", detail: "5 分钟前", label: "出错", at: T - 5 * MIN, all: [{ label: "Edit .github/workflows/ci.yml", time: "9 分钟前" }, { label: "Bash gh run watch", time: "7 分钟前" }, { label: "API Error: 529 overloaded", time: "5 分钟前", error: true }] },
+	{ id: "s3", status: "running", title: "affectUI 分批移植", place: "mixer", detail: "Edit composer.tsx", label: "运行中", at: T - 42_000, all: [{ label: "Read docs/components/composer.md", time: "1 分钟前" }, { label: "Grep Tray", time: "50 秒前" }, { label: "Edit composer.tsx", time: "现在" }] },
+	{ id: "s4", status: "running", title: "跑全量测试", place: "amore", detail: "正在思考…", label: "运行中", at: T - 3 * MIN, all: [{ label: "Bash pnpm test", time: "2 分钟前" }, { label: "正在思考…", time: "现在" }] },
+	{ id: "s5", status: "background", title: "监控部署", place: "gewu", detail: "部署到 Cloudflare 等 2 个", label: "后台任务", at: T - 8 * MIN, all: [{ label: "Bash wrangler deploy", time: "8 分钟前" }] },
+	{ id: "s6", status: "done", title: "改动面板重新设计", place: "mixer", detail: "12 分钟前", label: "已完成", at: T - 12 * MIN, all: [{ label: "Edit changes.tsx", time: "15 分钟前" }, { label: "Bash pnpm build", time: "13 分钟前" }, { label: "改好了，截图在 /tmp", time: "12 分钟前" }] },
+];
+const MANY_RUNS: InboxItem[] = Array.from({ length: 14 }, (_, i) => {
+	const status = (["running", "done", "done", "error", "background"] as const)[i % 5] ?? "done";
+	return { id: `m${i}`, status, title: `第 ${i + 1} 个会话：${["整理依赖", "补测试", "写文档", "修样式", "迁移数据"][i % 5]}`, place: ["mixer", "gewu", "stems"][i % 3], detail: status === "running" ? "Bash pnpm test" : `${i + 2} 分钟前`, label: { running: "运行中", done: "已完成", error: "出错", background: "后台任务" }[status], at: T - i * MIN };
+});
+const LONG_RUNS: InboxItem[] = [
+	{ id: "l1", status: "running", title: "把 mixer 里学 affectUI 做的那几块（工具组、确认卡片、上下文、思考提示、输入框托盘）拆成通用组件，搬进组件库", place: "mixer › .claude/worktrees/very-long-worktree-name", detail: "Bash pnpm exec vite build -c vite.block.config.ts --logLevel warn && node scripts/check-size.mjs", label: "运行中", aside: <Elapsed since={T - 61 * MIN} aria-hidden />, at: T, steps: [{ label: "Bash pnpm exec vite build -c vite.block.config.ts --logLevel warn && node scripts/check-size.mjs --budget 650", time: "现在" }] },
+	{ id: "l2", status: "done", title: "Refactor the entire session panel so that it works in all three layouts", place: "mixer", detail: "刚刚", label: "已完成", at: T },
+];
+const CYCLE: Record<InboxStatus, [InboxStatus, string]> = { running: ["done", "已完成"], done: ["waiting", "待确认"], waiting: ["running", "运行中"], error: ["running", "运行中"], background: ["done", "已完成"] };
+
+function Runs({ open, loadingSteps, live }: { open?: boolean; loadingSteps?: boolean; live?: boolean }) {
+	const [loaded, setLoaded] = useState<Set<string>>(() => new Set(open ? RUNS.map((r) => r.id) : []));
+	const [st, setSt] = useState<Record<string, [InboxStatus, string]>>({});
+	const items: InboxItem[] = RUNS.map(({ all, ...r }) => {
+		const [status, label] = st[r.id] ?? [r.status, r.label];
+		return {
+			...r,
+			status,
+			label,
+			aside: status === "running" ? <Elapsed since={r.at} aria-hidden /> : undefined,
+			steps: loadingSteps ? null : loaded.has(r.id) || status === "waiting" ? all : null,
+			children: status === "waiting" ? <ApprovalCard title="运行命令" description="推送到 GitHub" icon={SquareTerminal} code="git push origin main" until={T + 9 * MIN} keys="none" onApprove={() => new Promise((ok) => setTimeout(ok, 800)).then(() => setSt((x) => ({ ...x, [r.id]: ["running", "运行中"] })))} onDeny={() => new Promise((ok) => setTimeout(ok, 800))} /> : undefined,
+		};
+	});
+	return (
+		<div className={col}>
+			{live && (
+				<div className="flex flex-wrap gap-1.5">
+					{items.map((it) => (
+						<Button key={it.id} size="xs" variant="outline" onClick={() => setSt((x) => ({ ...x, [it.id]: CYCLE[it.status] }))}>
+							{it.title.slice(0, 6)} → {CYCLE[it.status][1]}
+						</Button>
+					))}
+				</div>
+			)}
+			<AgentInbox
+				items={items}
+				defaultOpen={open || loadingSteps ? RUNS.map((r) => r.id) : undefined}
+				onOpen={() => toast("打开会话")}
+				onToggle={(it, on) => { if (on && !loaded.has(it.id)) setTimeout(() => setLoaded((l) => new Set([...l, it.id])), 600); }}
+			/>
+		</div>
+	);
+}
 
 /** A card wired like a host would: approving takes 1.2s, then it folds into its outcome */
 function Approval({ kind = "bash", until = Date.now() + 8 * 60_000, label, risk, always, edit, keys = "focus" }: { kind?: "bash" | "edit"; until?: number; label?: ReactNode; risk?: "low" | "medium" | "high"; always?: string; edit?: boolean; keys?: "focus" | "global" | "none" }) {
