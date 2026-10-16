@@ -120,15 +120,19 @@ function ToolCall({ call, args, result, error, renderCode, onRetry, onMore, open
 			<CollapsibleContent className={SLIDE}>
 				<div className="flex flex-col gap-2 pt-1 pb-2 pl-5.5">
 					{error && (
-						<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-subtle px-3 py-2 text-xs text-destructive-strong">
+						<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-subtle py-2 pr-1.5 pl-3 text-xs text-destructive-strong">
 							<CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
-							<span className="min-w-0 flex-1 break-words">{error}</span>
-							{onRetry && (
-								<Button variant="outline" size="xs" className="-my-0.5 shrink-0" onClick={onRetry}>
-									<RotateCw />
-									重试
-								</Button>
-							)}
+							{/* A tool's error is often its whole output: it scrolls, and several lines read as code */}
+							<span className={cn("max-h-72 min-w-0 flex-1 overflow-auto break-words whitespace-pre-wrap", error.includes("\n") && "font-mono leading-code")}>{error}</span>
+							<span className="-my-0.5 flex shrink-0 items-center gap-1">
+								<CopyButton text={error} label="复制出错信息" />
+								{onRetry && (
+									<Button variant="outline" size="xs" onClick={onRetry}>
+										<RotateCw />
+										重试
+									</Button>
+								)}
+							</span>
 						</div>
 					)}
 					{args !== undefined && <Section label="参数" text={args} render={draw("args")} />}
@@ -161,6 +165,8 @@ function ToolStack({ calls, className }: { calls: ToolCallItem[]; className?: st
 
 type ToolCallGroupProps = {
 	calls: ToolCallItem[];
+	/** The turn goes on between calls – the model thinks before the next one. Default: a call is running */
+	running?: boolean;
 	/** Total time once every call finished, in ms */
 	ms?: number;
 	/** Under the folded header; default – the running calls, so the current step stays in sight */
@@ -172,6 +178,7 @@ type ToolCallGroupProps = {
 	onOpenChange?: (open: boolean) => void;
 	/** The open body; default – every call as a ToolCall */
 	children?: ReactNode;
+	id?: string;
 	className?: string;
 };
 
@@ -179,12 +186,14 @@ type ToolCallGroupProps = {
  * A run of calls under one header. Folded and finished, the last call is the title and the right side says how many and how long;
  * open, the title is the count. Running, the header counts and the running calls show below it
  */
-function ToolCallGroup({ calls, ms, exposed, actions, open, defaultOpen, onOpenChange, children, className }: ToolCallGroupProps) {
-	const { running, failed, last, done } = groupState(calls);
+function ToolCallGroup({ calls, running: busy, ms, exposed, actions, open, defaultOpen, onOpenChange, children, id, className }: ToolCallGroupProps) {
+	const state = groupState(calls);
+	const { running, failed, last } = state;
+	const done = busy === undefined ? state.done : !busy && calls.length > 0;
 	const count = calls.length;
-	const said = running.length ? `正在运行 ${running[0].name}` : count ? `已完成 ${count} 次工具调用${failed ? `，${failed} 次失败` : ""}` : "";
+	const said = running.length ? `正在运行 ${running[0].name}` : !done ? "正在思考" : count ? `已完成 ${count} 次工具调用${failed ? `，${failed} 次失败` : ""}` : "";
 	return (
-		<Collapsible data-slot="tool-call-group" open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} className={cn("group/tools", className)}>
+		<Collapsible id={id} data-slot="tool-call-group" open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} className={cn("group/tools", className)}>
 			<span className="sr-only" role="status">
 				{said}
 			</span>

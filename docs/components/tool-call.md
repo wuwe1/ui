@@ -20,7 +20,7 @@ ToolCall
 - Name – 「Bash」, 「Read」
 - Summary – the command, path or query, monospace, cut with `…`
 - Right side – a clock while running, the duration from 1s up, 「失败」 in red
-- Open – the error in a red box with an optional 「重试」, then 「参数」 and 「结果」, each with copy, and 「显示完整结果」 for a cut result
+- Open – the error in a red box with copy and an optional 「重试」, then 「参数」 and 「结果」, each with copy, and 「显示完整结果」 for a cut result. A long error scrolls inside the box; several lines read as code
 
 ToolCallGroup
 - Chevron, then the stacked icons of the last three tools
@@ -55,11 +55,13 @@ ToolCallGroup
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `calls` | `ToolCallItem[]` | – | Every call, oldest first |
+| `running` | `boolean` | a call is running | The turn goes on between calls – the model thinks before the next one |
 | `ms` | `number` | – | Total time once all finished |
 | `exposed` | `ReactNode` | the running calls | Under the folded header |
 | `actions` | `ReactNode` | – | Buttons at the end of the header |
 | `open`, `defaultOpen`, `onOpenChange` | | | Controlled or not |
 | `children` | `ReactNode` | every call | The open body |
+| `id` | `string` | – | For links into the conversation |
 
 Also exported: `ToolCallLine`, the line alone for custom rows, and `ToolStack`.
 
@@ -73,7 +75,7 @@ Also exported: `ToolCallLine`, the line alone for custom rows, and `ToolStack`.
 ## Accessibility
 
 - Group headers and lines are buttons with `aria-expanded`; a folded body leaves the tab order
-- Each group has a polite live region: 「正在运行 Bash」 while running, 「已完成 5 次工具调用，2 次失败」 once done
+- Each group has a polite live region: 「正在运行 Bash」 while a call runs, 「正在思考」 between calls, 「已完成 5 次工具调用，2 次失败」 once done
 - The stacked icons are `role="img"`, named 「用到的工具：Read、Grep」
 - Failure is never color alone – 「失败」 or ⚠ N in words
 - Clocks are `aria-hidden`
