@@ -12,6 +12,7 @@ import { ComposerSettings } from "../src/components/composer-settings.tsx";
 import { DictationButton, useDictation } from "../src/components/dictation.tsx";
 import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } from "../src/components/connection-card.tsx";
 import { DataGrid, type DataGridColumn, type DataGridRow, type DataGridSelection, type DataGridTone } from "../src/components/data-grid.tsx";
+import { type Decision, type DecisionAnswer, DecisionInbox, type DecisionOption } from "../src/components/decision-inbox.tsx";
 import { Elapsed } from "../src/components/elapsed.tsx";
 import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
 import { Input } from "../src/components/input.tsx";
@@ -47,7 +48,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
-	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff"] },
+	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff", "DecisionInbox"] },
 	{ label: "Data", pages: ["DataGrid"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
@@ -386,6 +387,19 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Prompt", render: () => <Edits a={PROMPT_A} b={PROMPT_B} ask="让它更像台湾的店" /> },
 		{ name: "English", render: () => <Edits a={EN_A} b={EN_B} ask="Make it shorter" /> },
 	],
+	DecisionInbox: [
+		{ name: "Default", render: () => <Decide decisions={DI_MEMORY} /> },
+		{ name: "Answered", render: () => <Act run={(el) => keys(el, ["2", "1", "2"])}><Decide decisions={DI_MEMORY} /></Act> },
+		{ name: "Note", render: () => <Act run={(el) => click(el, '[data-option="edit"]')}><Decide decisions={DI_MEMORY} /></Act> },
+		{ name: "All reviewed", render: () => <Act run={(el) => press(el, "采纳其余建议")}><Decide decisions={DI_MEMORY} /></Act> },
+		{ name: "Settled", render: () => <DecisionInbox decisions={DI_MEMORY} answers={DI_SETTLED} label={DI_LABEL} /> },
+		{ name: "No proposals", render: () => <Decide decisions={DI_PLAIN} label="发布前要你定" /> },
+		{ name: "Final answers", render: () => <DecisionInbox decisions={DI_OPS} label="发布前要你定" onDecide={(a) => toast(`已${DI_OPS.find((d) => d.id === a.decision)?.options.find((o) => o.id === a.option)?.label}`, { description: DI_OPS.find((d) => d.id === a.decision)?.title })} /> },
+		{ name: "Loading", render: () => <DecisionInbox decisions={null} label={DI_LABEL} /> },
+		{ name: "Empty", render: () => <Decide decisions={[]} /> },
+		{ name: "Long", render: () => <Decide decisions={DI_LONG} /> },
+		{ name: "Many", render: () => <Decide decisions={DI_MANY} label="清理依赖：30 个没用到的包" /> },
+	],
 	Toast: [
 		{
 			name: "Kinds",
@@ -511,6 +525,69 @@ const MR_LONG: MatchPair[] = [MR_P2, MR_P1].map((p) => ({
 	left: { ...p.left, label: `${p.left.label} 加厚款｜浴室门口吸水速干防滑脚踏垫 免洗` },
 	right: p.right && { ...p.right, label: `${p.right.label}（硅藻泥软垫，卡通图案，家用入户卫生间）` },
 }));
+
+const DI_LABEL = "清理 memory：mixer 项目";
+const DI_OPTIONS: DecisionOption[] = [
+	{ id: "keep", label: "保留" },
+	{ id: "drop", label: "删除" },
+	{ id: "edit", label: "修改", note: "改成什么" },
+];
+const DI_MEMORY: Decision[] = [
+	{
+		id: "ux",
+		title: "UX Writing 统一",
+		detail: "界面文字不口语化，照一套规范写",
+		proposed: "drop",
+		reason: "规范已写进 docs/writing.md，这条只剩重复",
+		more: "界面上的文字不要口语化（例：「画不出来」「正在画」），要有一套统一的 UX Writing 规范，所有界面文字照它写。\n\nWhy：口语化的说法不该出现在界面上。\nHow to apply：规范写在 docs/writing.md 的 UI copy 一节，新写的界面文字照它写。",
+		options: DI_OPTIONS,
+	},
+	{ id: "zh", title: "回复用中文", detail: "回复、进度说明、提问都用中文", proposed: "keep", reason: "每个会话都用得上，别处没写", options: DI_OPTIONS },
+	{ id: "roadmap", title: "图解的路线", detail: "chart、block、canvas 三种图解的进度", proposed: "edit", reason: "三种都做完了，进度可以删，只留结论", options: DI_OPTIONS },
+	{ id: "pkill", title: "别用 pkill 按模式杀进程", detail: "只按记下的 PID 或端口杀", proposed: "keep", reason: "误杀过一次，代价大", options: DI_OPTIONS },
+	{ id: "route", title: "page.route 会关掉缓存", detail: "测缓存时别用它，在服务前面放个记请求的代理", proposed: "keep", reason: "文档里不显眼，踩过一次", options: DI_OPTIONS },
+	{ id: "terms", title: "术语用英文", detail: "hover、focus、toast 直接写英文，不硬译", proposed: "keep", reason: "写回复、文档都用得上", options: DI_OPTIONS },
+];
+const DI_SETTLED: DecisionAnswer[] = [
+	{ decision: "ux", option: "drop", proposed: "drop" },
+	{ decision: "zh", option: "keep", proposed: "keep" },
+	{ decision: "roadmap", option: "edit", note: "只留三种图解的结论，进度删掉", proposed: "edit" },
+	{ decision: "pkill", option: "keep", proposed: "keep" },
+	{ decision: "route", option: "drop", proposed: "keep" },
+	{ decision: "terms", option: "keep", proposed: "keep" },
+];
+const DI_OPS: Decision[] = [
+	{ id: "pg", title: "把 staging 的数据库升到 Postgres 17？", detail: "迁移在 staging 的副本上跑过，用时 4 分钟", options: [{ id: "go", label: "升级" }, { id: "wait", label: "先不升" }], proposed: "go", reason: "副本上的测试全部通过" },
+	{ id: "issues", title: "关闭 14 个 90 天没动的 issue？", detail: "都没有关联的 PR，最近一条评论在 3 月", options: [{ id: "close", label: "关闭" }, { id: "keep", label: "保留" }], proposed: "close", reason: "关闭后还能重新打开" },
+	{ id: "tag", title: "给 #512 打 v2.3.0？", detail: "CHANGELOG 已写好，CI 通过", options: [{ id: "tag", label: "打 tag" }, { id: "wait", label: "再等等" }] },
+];
+const DI_PLAIN: Decision[] = DI_OPS.map(({ id, title, detail, options }) => ({ id, title, detail, options }));
+const DI_LONG: Decision[] = [
+	{
+		...DI_MEMORY[0]!,
+		title: "UX Writing 统一：界面文字不口语化、照一套规范写，新写的按钮、状态、空状态和错误都照它",
+		detail: "界面上的文字不要口语化（例：「画不出来」「正在画」），要有一套统一的规范；发给 Claude 的段落不算界面文字，不受这条约束",
+		reason: "规范已经写进 docs/writing.md 的 UI copy 一节，有改前改后的例子，这条 memory 只剩重复，留着反而可能和规范对不上",
+		more: Array.from({ length: 6 }, (_, i) => `第 ${i + 1} 段：${"按钮 2–6 个字、动词在前，状态写「已 X」「X 中」，空状态写「暂无 X」再加一行说明。".repeat(2)}`).join("\n\n"),
+	},
+	...DI_MEMORY.slice(1, 3).map((d) => ({ ...d, title: `${d.title}：${d.detail}，再加长一点看一行放不下时怎么截断` })),
+];
+const DI_PACKAGES = ["lodash", "moment", "left-pad", "request", "colors", "uuid", "classnames", "axios", "node-fetch", "chalk", "debug", "rimraf", "mkdirp", "glob", "minimist", "yargs", "commander", "dotenv", "cross-env", "nodemon", "concurrently", "husky", "lint-staged", "prettier", "eslint-plugin-import", "babel-eslint", "core-js", "regenerator-runtime", "whatwg-fetch", "es6-promise"];
+const DI_MANY: Decision[] = DI_PACKAGES.map((p, i) => ({
+	id: p,
+	title: `删除没用到的依赖 ${p}？`,
+	detail: `代码里没有 import，最后一次用到是 ${i + 2} 个月前`,
+	options: [{ id: "drop", label: "删除" }, { id: "keep", label: "保留" }],
+	proposed: "drop",
+	reason: "装着只会拖慢安装",
+}));
+/** An inbox wired like a host: 「完成」 hands the answers back after a moment */
+function Decide({ decisions, label = DI_LABEL }: { decisions: Decision[]; label?: string }) {
+	return <DecisionInbox decisions={decisions} label={label} onDone={(all) => new Promise((ok) => setTimeout(() => ok(toast.success("已交回答案", { description: `${all.length} 条` })), 800))} />;
+}
+/** Presses keys on the inbox one after another, each once the last answer has folded */
+const keys = (el: HTMLElement, ks: string[]) =>
+	ks.forEach((k, i) => setTimeout(() => el.querySelector('[data-slot="decision-inbox"]')?.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })), i * 900));
 
 /** A review wired like a host: 「完成」 saves for a moment, then the card is settled */
 const DAY = 86_400_000;
