@@ -1,10 +1,11 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { Bell, CircleAlert, FileText, GitFork, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Trash2 } from "lucide-react";
+import { AppWindow, Bell, CircleAlert, FileText, GitFork, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
+import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } from "../src/components/connection-card.tsx";
 import { Input } from "../src/components/input.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
@@ -28,7 +29,7 @@ export type Story = { name: string; render: () => ReactNode };
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
-	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "MessageActions", "MemoryPanel"] },
+	{ label: "Agent", pages: ["ThinkingLoader", "ToolCallGroup", "ToolCall", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -39,7 +40,7 @@ const col = "flex flex-col gap-3";
 
 const VARIANTS = ["default", "secondary", "outline", "ghost", "destructive", "link"] as const;
 const SIZES = ["xs", "sm", "default", "lg"] as const;
-const MARKS: Mark[] = ["waiting", "running", "background", "done", "error", "terminal", "ok", "failed"];
+const MARKS: Mark[] = ["waiting", "running", "background", "done", "error", "terminal", "ok", "failed", "off"];
 
 export const STORIES: Record<string, Story[]> = {
 	Button: [
@@ -184,6 +185,43 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Empty", render: () => <Memories initial={[]} /> },
 		{ name: "Loading", render: () => <MemoryPanel memories={[]} groups={GROUPS} loading enabled onEnabledChange={() => {}} /> },
 		{ name: "Long", render: () => <Memories initial={[...MEMORIES, ...MEMORIES.map((m) => ({ ...m, id: `${m.id}-2`, text: `${m.text}；另外在 lilto 和 listo 两个项目里也一样，长一点看看折行` }))]} /> },
+	],
+	ConnectionCard: [
+		{ name: "All set", render: () => <Browsers /> },
+		{ name: "Needs you", render: () => <Shops /> },
+		{ name: "Action", render: () => <SiteLogin /> },
+		{
+			name: "Error",
+			render: () => (
+				<ConnectionCard
+					icon={<Store />}
+					name="Shopee 店铺"
+					mark="error"
+					status="授权页打开失败"
+					description="经 Shopee 的接口读你的商品、订单和类目，不用开浏览器"
+					footer={
+						<>
+							<ConnectionNote mark="error">网关 20 秒内没有响应：检查网络后再试一次</ConnectionNote>
+							<Button variant="ghost" size="xs" className="text-muted-foreground">
+								<Plus />
+								授权一家店
+							</Button>
+						</>
+					}
+				/>
+			),
+		},
+		{
+			name: "Checking",
+			render: () => (
+				<ConnectionCard icon={<Globe />} name="蝦皮卖家中心" checking description="上架：在授权了的 Chrome 里登录着就行">
+					<ConnectionRow mark="ok" name="卖家中心" meta={["「办公室」里登录着", "店铺 C"]} />
+				</ConnectionCard>
+			),
+		},
+		{ name: "Not connected", render: () => <NoBrowser /> },
+		{ name: "Nothing to open", render: () => <ConnectionCard icon={<Globe />} name="chanboss" mark="off" status="缺浏览器" description="读订单：在授权了的 Chrome 里登录着就行" /> },
+		{ name: "Long", render: () => <Shops initial={MANY_SHOPS} long /> },
 	],
 	Toast: [
 		{
@@ -350,5 +388,179 @@ function Phases() {
 			<ThinkingLoader label={LABELS[i]} since={Date.now() - 6_000} />
 			<Button variant="outline" size="sm" className="w-fit" onClick={() => setI((i + 1) % LABELS.length)}>换一句</Button>
 		</div>
+	);
+}
+
+/** A connection's accounts as a host keeps them; lucide icons stand in for logos */
+type Shop = { id: string; name: string; meta: string[]; mark: ConnectionMark; status: string; fix?: string };
+const SHOPS: Shop[] = [
+	{ id: "a", name: "原木生活馆", meta: ["TW", "授权到 2027-05-04"], mark: "ok", status: "已授权" },
+	{ id: "b", name: "小林家居", meta: ["TW", "授权到 2026-10-21"], mark: "waiting", status: "5 天后到期", fix: "重新授权" },
+	{ id: "c", name: "店铺 63401287", meta: ["卖家中心在「办公室」里登录着"], mark: "waiting", status: "待授权", fix: "授权" },
+];
+const MANY_SHOPS: Shop[] = [
+	...SHOPS,
+	...["SG", "MY", "PH", "TH", "VN", "BR"].map((site, i): Shop => ({ id: site, name: `原木生活馆 ${site} 站点的跨境店铺，名字很长也只占一行`, meta: [site, "授权到 2027-03-1" + i], mark: "ok", status: "已授权" })),
+	{ id: "x", name: "旧店铺", meta: ["TW", "授权到 2026-09-30"], mark: "error", status: "已过期", fix: "重新授权" },
+];
+
+/** The shops of one platform: fixing a row takes a second, then the header counts again */
+function Shops({ initial = SHOPS, long }: { initial?: Shop[]; long?: boolean }) {
+	const [shops, setShops] = useState(initial);
+	const [busy, setBusy] = useState<string | null>(null);
+	const fix = (id: string) => {
+		setBusy(id);
+		setTimeout(() => {
+			setBusy(null);
+			setShops((l) => l.map((x): Shop => (x.id === id ? { ...x, mark: "ok", status: "已授权", fix: undefined, meta: ["TW", "授权到 2027-10-16"] } : x)));
+		}, 1000);
+	};
+	const pending = shops.filter((x) => x.mark !== "ok").length;
+	return (
+		<ConnectionCard
+			icon={<Store />}
+			name={long ? "Shopee 跨境店铺（台湾、新加坡、马来西亚、菲律宾、泰国、越南、巴西）" : "Shopee 店铺"}
+			mark={pending ? "waiting" : "ok"}
+			status={pending ? `${pending} 家待处理` : `已授权 ${shops.length} 家`}
+			description={
+				long
+					? "经 Shopee 的接口读你的商品、订单、类目和物流渠道，不用开浏览器。授权一年有效，到期前 14 天提醒你重新授权，过期以后上架、改价都会失败"
+					: "经 Shopee 的接口读你的商品、订单和类目，不用开浏览器"
+			}
+			footer={
+				<Button variant="ghost" size="xs" className="text-muted-foreground">
+					<Plus />
+					授权一家店
+				</Button>
+			}
+		>
+			{shops.map((x) => (
+				<ConnectionRow
+					key={x.id}
+					mark={x.mark}
+					name={x.name}
+					meta={x.meta}
+					status={x.status}
+					actions={
+						x.fix && (
+							<Button variant={x.fix === "授权" ? "default" : "outline"} size="xs" disabled={busy !== null} onClick={() => fix(x.id)}>
+								{busy === x.id && <Spinner />}
+								{x.fix}
+							</Button>
+						)
+					}
+				/>
+			))}
+		</ConnectionCard>
+	);
+}
+
+/** Browsers that run the extension: a quiet button turns one off or back on */
+function Browsers() {
+	const [list, setList] = useState([
+		{ id: "a", name: "办公室", on: true },
+		{ id: "b", name: "未命名（f6a7b8）", on: true },
+		{ id: "c", name: "备用", on: false },
+	]);
+	const on = list.filter((b) => b.on).length;
+	return (
+		<ConnectionCard
+			icon={<AppWindow />}
+			name="Chrome 浏览器"
+			mark={on ? "ok" : "waiting"}
+			status={on ? `已连接 ${on} 个` : "均未启用"}
+			description="读 1688 货源、在卖家中心做接口做不了的事：用你登录着的 Chrome"
+			footer={
+				<Button variant="ghost" size="xs" className="text-muted-foreground">
+					<Plus />
+					连接浏览器
+				</Button>
+			}
+		>
+			{list.map((b) => (
+				<ConnectionRow
+					key={b.id}
+					mark={b.on ? "ok" : "off"}
+					name={b.name}
+					status={b.on ? "已授权" : "未启用"}
+					quiet={
+						<Button variant="ghost" size="xs" className="text-muted-foreground" onClick={() => setList((l) => l.map((x) => (x.id === b.id ? { ...x, on: !x.on } : x)))}>
+							{b.on ? "停用" : "启用"}
+						</Button>
+					}
+				/>
+			))}
+		</ConnectionCard>
+	);
+}
+
+/** One press fixes it: the page opens in a second, then the login is checked again */
+function SiteLogin() {
+	const [step, setStep] = useState<"out" | "opening" | "checking" | "in">("out");
+	const go = () => {
+		setStep("opening");
+		setTimeout(() => setStep("checking"), 1000);
+		setTimeout(() => setStep("in"), 2500);
+	};
+	const done = step === "in";
+	return (
+		<div className={col}>
+			<ConnectionCard
+				icon={<Globe />}
+				name="1688"
+				mark={done ? "ok" : "waiting"}
+				status={done ? "已登录" : "未登录"}
+				checking={step === "checking"}
+				description="读货源：在授权了的 Chrome 里登录着就行"
+				action={
+					!done && (
+						<Button size="sm" disabled={step !== "out"} onClick={go}>
+							{step === "opening" && <Spinner />}
+							去登录
+						</Button>
+					)
+				}
+			>
+				<ConnectionRow mark={done ? "ok" : "waiting"} name="1688 登录" meta={[done ? "「办公室」里登录着" : "「办公室」里未登录"]} />
+			</ConnectionCard>
+			{done && (
+				<Button variant="ghost" size="xs" className="w-fit" onClick={() => setStep("out")}>
+					再来一次
+				</Button>
+			)}
+		</div>
+	);
+}
+
+/** Not connected yet: the button opens the steps */
+function NoBrowser() {
+	const [open, setOpen] = useState(false);
+	const steps = ["在 Chrome 的地址栏里打开 chrome://extensions", "打开右上角的「开发者模式」", "点「加载已解压的扩展程序」，选扩展的文件夹", "连上以后会出现在这里：给它起个名字，点「授权」"];
+	return (
+		<ConnectionCard
+			icon={<AppWindow />}
+			name="Chrome 浏览器"
+			status="未连接"
+			description="读 1688 货源、在卖家中心做接口做不了的事：用你登录着的 Chrome"
+			action={
+				!open && (
+					<Button size="sm" onClick={() => setOpen(true)}>
+						连接浏览器
+					</Button>
+				)
+			}
+			open={open}
+			onOpenChange={setOpen}
+			footer={
+				<ol className="flex flex-col gap-2 px-2 py-1.5 text-xs">
+					{steps.map((x, i) => (
+						<li key={x} className="grid grid-cols-[1rem_1fr] gap-2">
+							<span className="text-muted-foreground tabular-nums">{i + 1}</span>
+							{x}
+						</li>
+					))}
+				</ol>
+			}
+		/>
 	);
 }
