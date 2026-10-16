@@ -21,6 +21,7 @@ import { MemoryPanel, type MemoryGroup, type MemoryItem } from "../src/component
 import { NotificationStack, type Notice } from "../src/components/notification-stack.tsx";
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
+import { Popsheet } from "../src/components/popsheet.tsx";
 import { Shimmer } from "../src/components/shimmer.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
 import { Spinner } from "../src/components/spinner.tsx";
@@ -31,6 +32,7 @@ import { ToolCall, ToolCallGroup, type ToolCallItem } from "../src/components/to
 import { Textarea } from "../src/components/textarea.tsx";
 import { toast } from "../src/components/toast.tsx";
 import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
+import { type UsageAccount, UsageMeter, UsageSummary, type UsageWindow } from "../src/components/usage-meter.tsx";
 import { cn } from "../src/lib/utils.ts";
 
 export type Story = { name: string; render: () => ReactNode };
@@ -39,7 +41,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
-	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "MessageActions", "ConnectionCard", "MemoryPanel"] },
+	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -233,6 +235,22 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Can't compact", render: () => <Ctx disabled="运行中：这一轮结束后再压缩" /> },
 		{ name: "Fresh", render: () => <Ctx messages={900} /> },
 		{ name: "Narrow", render: () => <div className="w-[300px]"><Ctx /></div> },
+	],
+	UsageMeter: [
+		{ name: "Loading", render: () => <Usage accounts={null} /> },
+		{ name: "Default", render: () => <Usage accounts={[claude([five(0.43, 1.6 * HOUR), week(0.56)])]} /> },
+		{ name: "Near the limit", render: () => <Usage accounts={[claude([five(0.84, 0.5 * HOUR), week(0.62)])]} /> },
+		{ name: "Runs out early", render: () => <Usage accounts={[claude([five(0.64, 3 * HOUR), week(0.58)])]} /> },
+		{ name: "Used up", render: () => <Usage accounts={[claude([five(1, 0.8 * HOUR), week(0.71)])]} /> },
+		{ name: "Reset", render: () => <Usage accounts={[claude([five(0.43, -0.2 * HOUR), week(0.56)], 25 * MIN)]} /> },
+		{ name: "Stale", render: () => <Usage accounts={[claude([five(0.31, 2.5 * HOUR), week(0.52)], 2 * HOUR)]} /> },
+		{ name: "Refresh", render: () => <Usage accounts={[claude([five(0.43, 1.6 * HOUR), week(0.56)], 12 * MIN)]} refresh="ok" /> },
+		{ name: "Refresh failed", render: () => <Usage accounts={[claude([five(0.43, 1.6 * HOUR), week(0.56)], 12 * MIN)]} refresh="fail" /> },
+		{ name: "Spend", render: () => <Usage accounts={[claude([five(0.43, 1.6 * HOUR), week(0.56)]), PI]} /> },
+		{ name: "Many", render: () => <Usage accounts={[claude([five(0.43, 1.6 * HOUR), week(0.56)]), { ...claude([five(0.12, 4 * HOUR), week(0.3)]), id: "work", label: "Claude › 公司", plan: "Team" }, PI]} /> },
+		{ name: "Long", render: () => <div className="w-[260px]"><Usage accounts={[{ ...claude([five(0.64, 3 * HOUR), { ...week(0.58), label: "本周（所有模型，含 Claude Code）" }]), label: "Claude › 一个很长的组织名字" }, { ...PI, table: { columns: ["今天", "本月"], rows: [{ label: "openrouter-anthropic-claude", values: ["$12.40", "$1,284.06"] }] } }]} /></div> },
+		{ name: "Empty", render: () => <Usage accounts={[]} /> },
+		{ name: "In the sidebar", render: () => <UsageInSidebar /> },
 	],
 	MessageActions: [
 		{ name: "Quiet", render: () => <Reply time /> },
@@ -628,6 +646,48 @@ function Ctx({ messages = 108_600, live, disabled }: { messages?: number; live?:
 		<div className={col}>
 			<ContextWindow parts={parts} limit={200_000} model="claude-opus-5-5" threshold={0.92} compactDisabled={disabled} onCompact={() => new Promise((ok) => setTimeout(ok, 2500)).then(() => setMsgs(14_200))} />
 			{live && msgs !== messages && <Button variant="ghost" size="xs" className="w-fit" onClick={() => setMsgs(messages)}>再来一次</Button>}
+		</div>
+	);
+}
+
+/** Usage as mixer feeds it: Claude's two windows, relative to now; refreshing takes 1.2s */
+const HOUR = 60 * MIN;
+const NOTE = "每 10 分钟从本机的 claude 获取一次，含终端里的用量；在 mixer 里运行时实时更新";
+const five = (used: number, left: number): UsageWindow => ({ label: "5 小时", used, resetsAt: Date.now() + left, span: 5 * HOUR });
+const week = (used: number): UsageWindow => ({ label: "本周", used, resetsAt: Date.now() + 40.6 * HOUR, span: 7 * 24 * HOUR });
+const claude = (windows: UsageWindow[], ago = 4 * MIN): UsageAccount => ({ id: "claude", label: "Claude", plan: "Max", windows, at: Date.now() - ago, note: NOTE });
+const PI: UsageAccount = { id: "pi", label: "pi", table: { columns: ["今天", "本月"], rows: [{ label: "deepseek", values: ["$0.39", "$3.79 / $20"], share: 0.19 }, { label: "openrouter", values: ["$0.05", "$1.25"] }] } };
+
+function Usage({ accounts, refresh }: { accounts: UsageAccount[] | null; refresh?: "ok" | "fail" }) {
+	const [list, setList] = useState(accounts);
+	const onRefresh = refresh
+		? (id: string) =>
+				new Promise<void>((ok, no) =>
+					setTimeout(() => {
+						if (refresh === "fail") return no(new Error("claude 退出了"));
+						setList((l) => l?.map((a) => (a.id === id ? { ...a, at: Date.now() } : a)) ?? l);
+						ok();
+					}, 1200),
+				)
+		: undefined;
+	return (
+		<div className="flex w-full max-w-[340px] flex-col gap-3">
+			<div className="rounded-xl border bg-sidebar p-1.5">
+				<UsageSummary accounts={list} />
+			</div>
+			<UsageMeter accounts={list} onRefresh={onRefresh} />
+		</div>
+	);
+}
+
+/** The way a host wires it: the summary opens the meter in a bare Popsheet */
+function UsageInSidebar() {
+	const accounts = [claude([five(0.64, 3 * HOUR), week(0.58)]), PI];
+	return (
+		<div className="w-60 rounded-xl border bg-sidebar p-1.5">
+			<Popsheet trigger={<UsageSummary accounts={accounts} />} title="用量" side="right" align="end" bare className="max-h-[80svh] w-80">
+				<UsageMeter accounts={accounts} onRefresh={() => new Promise((ok) => setTimeout(ok, 1200))} />
+			</Popsheet>
 		</div>
 	);
 }

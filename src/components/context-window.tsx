@@ -4,6 +4,7 @@
 // The card counts nothing: the host passes the numbers its model reports.
 import { Check, ChevronRight, FoldVertical } from "lucide-react";
 import { type PointerEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { useRoll } from "../hooks/use-roll.ts";
 import { Button } from "./button.tsx";
 import { Shimmer } from "./shimmer.tsx";
 import { Skeleton } from "./skeleton.tsx";
@@ -40,33 +41,6 @@ type ContextWindowProps = {
 const GRAY = [88, 62, 40, 22];
 const color = (p: ContextPart, i: number) => (p.compact ? "var(--series-1)" : `color-mix(in oklab, var(--foreground) ${GRAY[p.tone ?? Math.min(3, i)]}%, transparent)`);
 const CELLS = 216;
-const reduced = () => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-/** A number that rolls to its new value in 300ms; reduced motion jumps */
-function useRoll(value: number) {
-	const [shown, setShown] = useState(value);
-	const from = useRef(value);
-	useEffect(() => {
-		if (reduced() || from.current === value) {
-			from.current = value;
-			setShown(value);
-			return;
-		}
-		const start = performance.now();
-		const a = from.current;
-		let raf = 0;
-		const tick = (t: number) => {
-			const k = Math.min(1, (t - start) / 300);
-			const v = a + (value - a) * (1 - (1 - k) ** 3);
-			from.current = v;
-			setShown(v);
-			if (k < 1) raf = requestAnimationFrame(tick);
-		};
-		raf = requestAnimationFrame(tick);
-		return () => cancelAnimationFrame(raf);
-	}, [value]);
-	return shown;
-}
 
 function ContextWindow({ parts, limit, title = "上下文", hideTitle, model, threshold, warnAt = 0.8, onCompact, compactDisabled, compacting, className }: ContextWindowProps) {
 	const [hover, setHover] = useState<string | null>(null);
