@@ -1,7 +1,7 @@
 // submits, joinSpeech: what Composer decides on its own
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { joinSpeech, submits } from "../src/lib/composer.ts";
+import { joinSpeech, recalls, submits } from "../src/lib/composer.ts";
 
 const key = (k: Partial<Parameters<typeof submits>[0]> = {}) => ({ key: "Enter", shiftKey: false, metaKey: false, ctrlKey: false, ...k });
 
@@ -28,4 +28,14 @@ test("joinSpeech: a space between Latin words, none around Chinese", () => {
 	assert.equal(joinSpeech("看 README", "然后改"), "看 README然后改");
 	assert.equal(joinSpeech("line\n", "next"), "line\nnext");
 	assert.equal(joinSpeech("keep", "  "), "keep");
+});
+
+test("recalls: ↑ in an empty field only, plain, never mid input method", () => {
+	assert.equal(recalls(key({ key: "ArrowUp" }), true), true);
+	assert.equal(recalls(key({ key: "ArrowUp" }), false), false);
+	assert.equal(recalls(key({ key: "ArrowUp", shiftKey: true }), true), false);
+	assert.equal(recalls(key({ key: "ArrowUp", metaKey: true }), true), false);
+	assert.equal(recalls({ ...key({ key: "ArrowUp" }), altKey: true }, true), false);
+	assert.equal(recalls(key({ key: "ArrowUp", isComposing: true }), true), false);
+	assert.equal(recalls(key({ key: "ArrowDown" }), true), false);
 });

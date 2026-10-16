@@ -1,5 +1,6 @@
 // Composer: where a message to an agent is written. A white card says what to send and how – attachments on top, the text, a row of controls
 // with send at the end; a gray tray around it says what the conversation is doing now, and only shows while there's something to say.
+// Messages sent while the agent works wait in the tray, right above the text they came from (MessageQueue); ↑ in an empty field pulls the newest back.
 // It's a shell: the host fills the slots (attachments, settings, add, context) and owns the draft, sending and stopping.
 // ↵ sends with a keyboard, ⇧↵ breaks the line; on a touch screen ↵ is a new line and the button sends. Never mid input method.
 import { ArrowUp, Square } from "lucide-react";
@@ -7,7 +8,7 @@ import { type ClipboardEvent, type ReactNode, type Ref, useEffect, useRef, useSt
 import { Button } from "./button.tsx";
 import { Spinner } from "./spinner.tsx";
 import { Textarea } from "./textarea.tsx";
-import { submits } from "../lib/composer.ts";
+import { recalls, submits } from "../lib/composer.ts";
 import { cn } from "../lib/utils.ts";
 
 type ComposerProps = {
@@ -21,6 +22,10 @@ type ComposerProps = {
 	textareaRef?: Ref<HTMLTextAreaElement>;
 	/** What the conversation is doing now – in the tray above the card. null hides the tray */
 	tray?: ReactNode;
+	/** Messages waiting for the agent – a MessageQueue, in the tray under its row, right above the card */
+	queue?: ReactNode;
+	/** ↑ in an empty field: pull the newest waiting message back */
+	onRecall?: () => void;
 	/** Inside the card, above the text: attachments */
 	top?: ReactNode;
 	/** Words being heard, gray under the text until they're final */
@@ -39,14 +44,14 @@ type ComposerProps = {
 
 const touchScreen = () => typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches;
 
-function Composer({ value, onValueChange, onSubmit, placeholder, size = "sm", autoFocus, textareaRef, tray, top, interim, start, end, send, stop, onPaste, className }: ComposerProps) {
+function Composer({ value, onValueChange, onSubmit, placeholder, size = "sm", autoFocus, textareaRef, tray, queue, onRecall, top, interim, start, end, send, stop, onPaste, className }: ComposerProps) {
 	const sm = size === "sm";
 	const own = useRef<HTMLTextAreaElement | null>(null);
 	const [touch] = useState(touchScreen);
 	// The tray keeps its last words while it folds away
-	const last = useRef<ReactNode>(null);
-	if (tray) last.current = tray;
-	const traying = !!tray;
+	const traying = !!tray || !!queue;
+	const last = useRef<{ tray: ReactNode; queue: ReactNode }>({ tray: null, queue: null });
+	if (traying) last.current = { tray: tray ?? null, queue: queue ?? null };
 	const showStop = !!stop && !value.trim() && !send.busy;
 	const setRef = (el: HTMLTextAreaElement | null) => {
 		own.current = el;
@@ -61,7 +66,8 @@ function Composer({ value, onValueChange, onSubmit, placeholder, size = "sm", au
 		<div data-slot="composer" className={cn("flex w-full flex-col rounded-2xl p-1 transition-colors duration-300 motion-reduce:transition-none", traying ? "bg-muted" : "bg-transparent", className)}>
 			<div className={cn("grid transition-[grid-template-rows] duration-300 ease-out-strong motion-reduce:transition-none", traying ? "grid-rows-[1fr]" : "grid-rows-[0fr]")} inert={!traying} aria-hidden={!traying || undefined}>
 				<div className="min-h-0 overflow-hidden">
-					<div className="flex min-w-0 items-center gap-3 px-1.5 pt-0.5 pb-1.5 text-2xs text-muted-foreground tabular-nums">{last.current}</div>
+					{last.current.tray && <div className="flex min-w-0 items-center gap-3 px-1.5 pt-0.5 pb-1.5 text-2xs text-muted-foreground tabular-nums">{last.current.tray}</div>}
+					{last.current.queue && <div className="pb-1">{last.current.queue}</div>}
 				</div>
 			</div>
 			{/* A click anywhere on the card that isn't a control puts the caret in the text */}
@@ -84,6 +90,10 @@ function Composer({ value, onValueChange, onSubmit, placeholder, size = "sm", au
 					value={value}
 					onChange={(e) => onValueChange(e.target.value)}
 					onKeyDown={(e) => {
+						if (onRecall && recalls({ ...e, isComposing: e.nativeEvent.isComposing, keyCode: e.keyCode }, !value)) {
+							e.preventDefault();
+							return onRecall();
+						}
 						if (!submits({ ...e, isComposing: e.nativeEvent.isComposing, keyCode: e.keyCode }, touch)) return;
 						e.preventDefault();
 						if (!send.disabled && !send.busy) onSubmit();

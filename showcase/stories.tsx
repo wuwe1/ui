@@ -21,6 +21,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/
 import { Kbd } from "../src/components/kbd.tsx";
 import { type MatchDecision, type MatchPair, MatchReview } from "../src/components/match-review.tsx";
 import { MemoryPanel, type MemoryGroup, type MemoryItem } from "../src/components/memory-panel.tsx";
+import { MessageQueue, type QueuedMessage } from "../src/components/message-queue.tsx";
 import { NotificationStack, type Notice } from "../src/components/notification-stack.tsx";
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
@@ -46,7 +47,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
-	{ label: "Agent", pages: ["Composer", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff"] },
+	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff"] },
 	{ label: "Data", pages: ["DataGrid"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
@@ -232,7 +233,17 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Sending", render: () => <Compose text="提交吧" busy /> },
 		{ name: "Hearing", render: () => <Compose text="把首页标题" interim="改成 Inbox 然后" /> },
 		{ name: "Attachments", render: () => <Compose text="看看这两张" attachments /> },
+		{ name: "Queued", render: () => <Queue n={2} /> },
 		{ name: "Dialog", render: () => <Compose size="lg" /> },
+	],
+	MessageQueue: [
+		{ name: "One", render: () => <Queue n={1} /> },
+		{ name: "Several", render: () => <Queue n={3} /> },
+		{ name: "Open", render: () => <Queue n={3} open /> },
+		{ name: "Long", render: () => <Queue n={2} open from={1} /> },
+		{ name: "Pictures", render: () => <Queue n={2} from={2} /> },
+		{ name: "Many", render: () => <Queue n={6} /> },
+		{ name: "Live", render: () => <Queue n={2} live /> },
 	],
 	ComposerSettings: [
 		{ name: "Default", render: () => <Settings /> },
@@ -852,6 +863,64 @@ function Compose({ text: t0 = "", running: r0 = false, stopping, busy, interim, 
 				send={{ label: "发送", disabled: !text.trim(), busy }}
 				stop={running ? { onStop: () => setRunning(false), stopping: !!stopping } : undefined}
 			/>
+		</div>
+	);
+}
+
+/** Shown in the thumbnails of queued messages – a screenshot, a sketch */
+const SHOT = (fill: string, line: string) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='80' height='60'><rect width='80' height='60' fill='${fill}'/><rect x='8' y='9' width='40' height='7' rx='2' fill='${line}'/><rect x='8' y='24' width='62' height='4' rx='2' fill='${line}' opacity='.5'/><rect x='8' y='34' width='50' height='4' rx='2' fill='${line}' opacity='.5'/><rect x='8' y='44' width='56' height='4' rx='2' fill='${line}' opacity='.5'/></svg>`)}`;
+const QUEUE: QueuedMessage[] = [
+	{ id: "q1", text: "用 Postgres 16 的语法，生产还没升到 17" },
+	{ id: "q2", text: "另外给 accounts.email 加唯一索引。迁移要能回滚，staging 上试跑时不能丢数据；跑完把 dry run 的输出贴给我看一下，我对一下行数和索引大小，没问题再开 PR" },
+	{ id: "q3", text: "顺便看看 orders 表有没有外键指向 users" },
+	{ id: "q4", text: "现在的表结构是这样的", images: [SHOT("#eceef1", "#99a1ad"), SHOT("#e8eef8", "#7f93b3")] },
+	{ id: "q5", text: "先别动 billing 那几张表" },
+	{ id: "q6", text: "PR 描述写中文" },
+];
+
+/** A composer while the agent runs, with messages waiting. live – buttons that play the agent picking them up */
+function Queue({ n, from = 0, open, live }: { n: number; from?: number; open?: boolean; live?: boolean }) {
+	const [items, setItems] = useState(() => QUEUE.slice(from, from + n));
+	const [withdrawing, setWithdrawing] = useState<string[]>([]);
+	const [text, setText] = useState("");
+	const [since] = useState(() => Date.now() - 83_000);
+	// Like a host: the server answers after a moment, then the message goes back in the input
+	const withdraw = (m: QueuedMessage) => {
+		setWithdrawing((w) => [...w, m.id]);
+		setTimeout(() => {
+			setItems((x) => x.filter((y) => y.id !== m.id));
+			setWithdrawing((w) => w.filter((id) => id !== m.id));
+			setText((t) => (t.trim() ? `${t.trimEnd()}\n\n${m.text}` : m.text));
+		}, 300);
+	};
+	const send = () => {
+		if (!text.trim()) return;
+		setItems((x) => [...x, { id: crypto.randomUUID(), text: text.trim() }]);
+		setText("");
+	};
+	return (
+		<div className="flex min-h-64 flex-col justify-end gap-3">
+			<Composer
+				value={text}
+				onValueChange={setText}
+				onSubmit={send}
+				placeholder="运行中，发送后排队…"
+				tray={<span className="flex items-center gap-1.5"><StatusIcon s="running" label={null} className="size-3.5" /><span className="text-foreground">运行中</span><Elapsed since={since} /></span>}
+				queue={items.length ? <MessageQueue items={items} withdrawing={withdrawing} onWithdraw={withdraw} defaultOpen={open} /> : null}
+				onRecall={() => {
+					const m = items.at(-1);
+					if (m && !withdrawing.includes(m.id)) withdraw(m);
+				}}
+				start={<Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="添加"><Plus className="size-4" /></Button>}
+				send={{ label: "发送", disabled: !text.trim() }}
+				stop={{ onStop: () => setItems([]), stopping: false }}
+			/>
+			{live && (
+				<div className="flex flex-wrap items-center gap-1.5">
+					<Button size="xs" variant="outline" disabled={!items.length} onClick={() => setItems([])}>Claude 读到</Button>
+					<Button size="xs" variant="ghost" onClick={() => setItems(QUEUE.slice(0, 2))}>再来一次</Button>
+				</div>
+			)}
 		</div>
 	);
 }

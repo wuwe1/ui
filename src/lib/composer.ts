@@ -1,4 +1,4 @@
-// What Composer decides on its own: whether a key sends, and how heard words join what's typed. Pure – test/composer.test.ts.
+// What Composer decides on its own: whether a key sends or pulls back a queued message, and how heard words join what's typed. Pure – test/composer.test.ts.
 
 type Key = { key: string; shiftKey: boolean; metaKey: boolean; ctrlKey: boolean; isComposing?: boolean; keyCode?: number };
 
@@ -10,6 +10,11 @@ export function submits(e: Key, touch: boolean): boolean {
 	if (e.key !== "Enter" || e.isComposing || e.keyCode === 229) return false;
 	if (e.metaKey || e.ctrlKey) return true;
 	return !touch && !e.shiftKey;
+}
+
+/** ↑ in an empty field pulls the newest queued message back, as in a terminal. Not while composing, not with a modifier */
+export function recalls(e: Key & { altKey?: boolean }, empty: boolean): boolean {
+	return e.key === "ArrowUp" && empty && !e.isComposing && e.keyCode !== 229 && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey;
 }
 
 const CJK = /[　-鿿가-힯＀-￯]/;
