@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../src/components/input.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
+import { NotificationStack, type Notice } from "../src/components/notification-stack.tsx";
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
 import { Shimmer } from "../src/components/shimmer.tsx";
@@ -166,6 +167,35 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Failed calls", render: () => <Reply stats={<TurnStats ms={96_000} tools={9} failed={2} files={FILES.slice(0, 1)} model="Sonnet 5.5" />} /> },
 		{ name: "Long", render: () => <Reply stats={<TurnStats ms={4_212_000} tools={148} failed={3} files={FILES} onFile={() => {}} agents={[...AGENTS, { id: "a3", label: "检查 iOS Safari 上的滚动" }, { id: "a4", label: "对比 affectUI 的 Agent Run 页面" }]} onAgent={() => {}} model="Opus 5.5" />} /> },
 	],
+	Toast: [
+		{
+			name: "Kinds",
+			render: () => (
+				<div className={row}>
+					<Button variant="outline" size="sm" onClick={() => toast("已移出工作区", { action: { label: "撤销", onClick: () => {} } })}>Info · action</Button>
+					<Button variant="outline" size="sm" onClick={() => toast.success("已复制到剪贴板")}>Success</Button>
+					<Button variant="outline" size="sm" onClick={() => toast.error("发送失败", { description: "网络连接已断开，消息已放回输入框" })}>Error</Button>
+					<Button variant="outline" size="sm" onClick={() => toast.promise(new Promise((r) => setTimeout(r, 1500)), { loading: "正在新建会话…", success: { title: "已打开新会话", description: "mixer › 修 block 手机闪退" }, error: "新建会话失败" })}>Promise</Button>
+				</div>
+			),
+		},
+		{
+			name: "Stack",
+			render: () => (
+				<Button variant="outline" size="sm" className="w-fit" onClick={() => { toast.success("已删除"); toast.error("停止失败", { description: "进程已退出" }); toast("已移出工作区", { action: { label: "撤销", onClick: () => {} } }); toast("第四条排队，前面关掉一条才出来"); }}>
+					一次来四条
+				</Button>
+			),
+		},
+		{ name: "Stays", render: () => <Button variant="outline" size="sm" className="w-fit" onClick={() => toast("有新版本", { duration: Number.POSITIVE_INFINITY, action: { label: "刷新", onClick: () => {} } })}>不自己消失</Button> },
+		{ name: "Long", render: () => <Button variant="outline" size="sm" className="w-fit" onClick={() => toast.error("启动失败：claude 退出码 1", { description: "Error: ENOENT: no such file or directory, open '/Users/me/repos/very/long/path/to/some/config/file/that/does/not/exist.json'" })}>很长的出错</Button> },
+	],
+	NotificationStack: [
+		{ name: "One", render: () => <Notices initial={NOTICES.slice(2)} /> },
+		{ name: "Three", render: () => <Notices initial={NOTICES} /> },
+		{ name: "Many", render: () => <Notices initial={[...NOTICES, { id: "n4", tag: "提示", title: "用量快到上限", text: "5 小时窗口已用 92%" }, { id: "n5", tag: "提示", title: "iPhone 上要先添加到主屏幕" }]} /> },
+		{ name: "Long", render: () => <Notices initial={[{ id: "l1", mark: "error", tag: "出错", title: "penna › 把导出的 PDF 换成按章节分页、目录可点、页眉带书名", text: "API Error: 529 overloaded_error – the service is temporarily overloaded, retried 10 times over 12 minutes", action: { label: "查看", onClick: () => {} } }]} /> },
+	],
 	Feedback: [
 		{ name: "Kbd", render: () => <div className={row}><Kbd>⌘</Kbd><Kbd>↵</Kbd><Kbd>Esc</Kbd></div> },
 		{ name: "toast", render: () => <div className={row}><Button variant="outline" size="sm" onClick={() => toast("已复制到剪贴板")}>提示</Button><Button variant="outline" size="sm" onClick={() => toast.error("出错：网络连接已断开")}>出错</Button></div> },
@@ -179,6 +209,22 @@ function Step({ running, summary }: { running?: boolean; summary: string }) {
 			<span className="shrink-0 font-medium">Bash</span>
 			<Shimmer active={running} className="truncate font-mono text-xs text-muted-foreground">{summary}</Shimmer>
 			<span className="ml-auto shrink-0 pl-2 text-2xs text-muted-foreground tabular-nums">{running ? "0:08" : "1.2s"}</span>
+		</div>
+	);
+}
+
+const NOTICES: Notice[] = [
+	{ id: "n1", mark: "ok", tag: "已完成", title: "mixer › 修 block 手机闪退", text: "改了 3 个文件，测试全部通过", action: { label: "查看", onClick: () => {} } },
+	{ id: "n2", mark: "error", tag: "出错", title: "penna › 导出 PDF", text: "API Error：overloaded", action: { label: "查看", onClick: () => {} } },
+	{ id: "n3", tag: "新版本", title: "mixer 有新版本", text: "刷新后生效，输入框里的字不会丢", action: { label: "刷新", onClick: () => {} } },
+];
+
+/** A stack the way a sidebar foot holds it: dismissing drops the front notice; empty – a button brings them back */
+function Notices({ initial }: { initial: Notice[] }) {
+	const [list, setList] = useState(initial);
+	return (
+		<div className="w-52">
+			{list.length ? <NotificationStack notices={list} onDismiss={(n) => setList((l) => l.filter((x) => x.id !== n.id))} /> : <Button variant="ghost" size="xs" onClick={() => setList(initial)}>再来一次</Button>}
 		</div>
 	);
 }

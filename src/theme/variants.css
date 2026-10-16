@@ -159,3 +159,13 @@
     visibility: visible;
   }
 }
+
+/* Toaster: the hairline that runs down with a toast's timer */
+@keyframes toast-time {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
