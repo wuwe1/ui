@@ -1,5 +1,5 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { AppWindow, Bell, MoveUpRight, CircleAlert, FileCode, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
+import { AppWindow, Bell, MoveUpRight, CircleAlert, FileCode, FileText, Folder, FolderGit2, History, Library, MessageSquare, Moon, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
 import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
@@ -7,6 +7,7 @@ import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
 import { Combobox, type ComboboxOption } from "../src/components/combobox.tsx";
+import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandHighlight, CommandInput, CommandItem, CommandList, CommandShortcut } from "../src/components/command.tsx";
 import { ContextWindow, type ContextPart } from "../src/components/context-window.tsx";
 import { Composer } from "../src/components/composer.tsx";
 import { ComposerSettings } from "../src/components/composer-settings.tsx";
@@ -48,7 +49,7 @@ export type Story = { name: string; render: () => ReactNode };
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
-	{ label: "Navigation", pages: ["Outline"] },
+	{ label: "Navigation", pages: ["Outline", "Command"] },
 	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff", "DecisionInbox"] },
 	{ label: "Inputs", pages: ["Combobox"] },
 	{ label: "Data", pages: ["DataGrid"] },
@@ -115,6 +116,17 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Invalid", render: () => <div className={col}><Input aria-invalid defaultValue="no-such-branch" /><span className="text-xs text-destructive-strong">分支不存在</span></div> },
 		{ name: "With icon", render: () => <InputGroup><InputGroupAddon><Search /></InputGroupAddon><InputGroupInput placeholder="搜索…" /></InputGroup> },
 		{ name: "Multiline", render: () => <Textarea placeholder="继续…" rows={3} /> },
+	],
+	Command: [
+		{ name: "Default", render: () => <Folders /> },
+		{ name: "Searching", render: () => <Act run={(el) => type(el.querySelector("input"), "re")}><Folders /></Act> },
+		{ name: "Empty", render: () => <Act run={(el) => type(el.querySelector("input"), "zzz")}><Folders /></Act> },
+		{ name: "Shortcuts", render: () => <Actions /> },
+		{ name: "Two lines", render: () => <Skills /> },
+		{ name: "Disabled", render: () => <Actions disabled /> },
+		{ name: "Long", render: () => <Sessions rows={SESSIONS_LONG} /> },
+		{ name: "Many", render: () => <Sessions rows={SESSIONS_MANY} /> },
+		{ name: "Dialog", render: () => <SessionDialog /> },
 	],
 	Combobox: [
 		{ name: "Default", render: () => <div className="max-w-md"><Reviewers start={["wangxm", "chenyu"]} /></div> },
@@ -1383,6 +1395,137 @@ function NoBrowser() {
 }
 
 /** Runs a step on the story once it's on screen – focus a blank, type a search, open the editor */
+const BOX = "max-w-md rounded-lg! border bg-transparent";
+const DIRS = [
+	{ name: "mixer", git: true, project: true },
+	{ name: "penna", git: true, project: true },
+	{ name: "ui", git: true, project: true },
+	{ name: "gewu", git: true },
+	{ name: "openintro-statistics-slides", git: true },
+	{ name: "notes" },
+	{ name: "Downloads" },
+];
+/** Folders the way mixer's new session lists them: recent projects first, then the folders here */
+function Folders() {
+	return (
+		<Command className={BOX} loop>
+			<CommandInput placeholder="筛选，或输入名字新建文件夹" />
+			<CommandList>
+				<CommandEmpty>无匹配的文件夹</CommandEmpty>
+				<CommandGroup heading="最近的项目">
+					{["~/repos/mixer", "~/Developer/penna", "~/repos/ui"].map((p) => (
+						<CommandItem key={p} value={`recent ${p}`}>
+							<History className="text-muted-foreground" />
+							<CommandHighlight text={p} className="min-w-0 flex-1 truncate font-mono text-md" />
+						</CommandItem>
+					))}
+				</CommandGroup>
+				<CommandGroup heading="文件夹">
+					{DIRS.map((d) => (
+						<CommandItem key={d.name} value={d.name}>
+							{d.git ? <FolderGit2 className="text-muted-foreground" /> : <Folder className="text-muted-foreground" />}
+							<CommandHighlight text={d.name} className="min-w-0 flex-1 truncate text-md" />
+							{d.project && <MessageSquare className="size-3.5! text-muted-foreground" aria-label="有会话" />}
+						</CommandItem>
+					))}
+				</CommandGroup>
+			</CommandList>
+		</Command>
+	);
+}
+/** A few actions with their keys */
+function Actions({ disabled }: { disabled?: boolean }) {
+	const rows: [string, typeof Plus, string][] = [["新会话", SquarePen, "N"], ["浏览会话", Library, "B"], ["打开 Inbox", Inbox, "I"], ["切到深色", Moon, "⇧D"]];
+	return (
+		<Command className={BOX}>
+			<CommandInput placeholder="搜索动作" />
+			<CommandList>
+				<CommandEmpty>无匹配的动作</CommandEmpty>
+				<CommandGroup heading="常用">
+					{rows.map(([label, Icon, keys], i) => (
+						<CommandItem key={label} value={label} disabled={disabled && i === 1} onSelect={() => toast(label)}>
+							<Icon className="text-muted-foreground" />
+							<CommandHighlight text={label} />
+							<CommandShortcut>{keys}</CommandShortcut>
+						</CommandItem>
+					))}
+				</CommandGroup>
+			</CommandList>
+		</Command>
+	);
+}
+const SKILLS = [
+	{ name: "component", desc: "照 affectUI 做或重做一块界面：看懂、重新设计、提议、实现" },
+	{ name: "code-review", desc: "审查当前的改动，找正确性问题，按严重程度排好" },
+	{ name: "simplify", desc: "看改过的代码能不能复用、简化、提效，然后改掉" },
+	{ name: "show-me", desc: "用简短的图解和小样讲清楚眼下的话题" },
+	{ name: "loop", desc: "每隔一段时间跑一遍同一个提示词或命令" },
+];
+/** Skills: a name and a description under it, recently used first */
+function Skills() {
+	const item = (s: (typeof SKILLS)[number], key: string) => (
+		<CommandItem key={key} value={`${s.name} ${s.desc}${key.startsWith("recent") ? "\u200b" : ""}`} className="flex-col items-start gap-0.5">
+			<span className="flex items-center gap-1.5 font-mono text-md">
+				{key.startsWith("recent") && <History className="size-3.5 text-muted-foreground" />}<span>/<CommandHighlight text={s.name} /></span>
+			</span>
+			<CommandHighlight text={s.desc} className="line-clamp-2 text-xs text-muted-foreground" />
+		</CommandItem>
+	);
+	return (
+		<Command className={BOX}>
+			<CommandInput placeholder="筛选 skill" />
+			<CommandList className="max-h-96">
+				<CommandEmpty>无匹配的 skill</CommandEmpty>
+				<CommandGroup heading="最近用过">{SKILLS.slice(0, 2).map((s) => item(s, `recent ${s.name}`))}</CommandGroup>
+				<CommandGroup heading="全部">{SKILLS.map((s) => item(s, s.name))}</CommandGroup>
+			</CommandList>
+		</Command>
+	);
+}
+type SessionRow = { id: string; title: string; folder: string; ago: string };
+const TITLES = ["修 block 手机闪退", "侧栏的会话树照 tree 画线", "Combobox 搬到组件库", "运行中发的消息叠在输入框上面", "开 agent：一次开几个", "改了 shared 的新包等服务端重启", "用量的重置时间写成明天 08:00", "Inbox 里待确认的排前面"];
+const SESSIONS: SessionRow[] = TITLES.map((title, i) => ({ id: `s${i}`, title, folder: i % 3 ? "mixer" : "ui", ago: `${(i + 1) * 7} 分钟` }));
+const SESSIONS_LONG: SessionRow[] = [
+	{ id: "l1", title: "把导出的 PDF 换成按章节分页、目录可点、页眉带书名，顺便把封面的字号调小一点", folder: "penna", ago: "3 分钟" },
+	{ id: "l2", title: "a-very-long-branch-name-without-spaces-that-keeps-going-and-going", folder: "ui", ago: "1 小时" },
+	...SESSIONS.slice(0, 3),
+];
+const SESSIONS_MANY: SessionRow[] = Array.from({ length: 200 }, (_, i) => ({ id: `m${i}`, title: `${TITLES[i % TITLES.length]} ${Math.floor(i / TITLES.length) + 1}`, folder: ["mixer", "ui", "penna"][i % 3]!, ago: `${i + 1} 分钟` }));
+/** Sessions by folder, the way mixer's browse lists them */
+function Sessions({ rows, onPick }: { rows: SessionRow[]; onPick?: (s: SessionRow) => void }) {
+	const folders = [...new Set(rows.map((r) => r.folder))];
+	return (
+		<Command className={onPick ? undefined : BOX}>
+			<CommandInput placeholder="搜索会话或文件夹" />
+			<CommandList className="max-h-[min(28rem,60svh)]">
+				<CommandEmpty>无匹配的会话</CommandEmpty>
+				{folders.map((f) => (
+					<CommandGroup key={f} heading={f}>
+						{rows.filter((r) => r.folder === f).map((r) => (
+							<CommandItem key={r.id} value={`${f} ${r.title} ${r.id}`} onSelect={() => onPick?.(r)}>
+								<CommandHighlight text={r.title} className="min-w-0 flex-1 truncate text-md" />
+								<span className="shrink-0 text-2xs text-muted-foreground tabular-nums">{r.ago}</span>
+							</CommandItem>
+						))}
+					</CommandGroup>
+				))}
+			</CommandList>
+		</Command>
+	);
+}
+/** A dialog a button opens: Esc clears the text, then closes, and focus goes back to the button */
+function SessionDialog() {
+	const [open, setOpen] = useState(false);
+	return (
+		<>
+			<Button variant="outline" size="sm" className="w-fit" onClick={() => setOpen(true)}><Library />浏览会话</Button>
+			<CommandDialog open={open} onOpenChange={setOpen} title="浏览会话" description="点一个会话打开它">
+				<Sessions rows={SESSIONS} onPick={(s) => { setOpen(false); toast(`已打开：${s.title}`); }} />
+			</CommandDialog>
+		</>
+	);
+}
+
 const PEOPLE: ComboboxOption[] = [
 	{ value: "wangxm", label: "王小明", hint: "设计负责人", group: "设计", avatar: true, keywords: ["wangxiaoming", "wxm"] },
 	{ value: "lina", label: "李娜", hint: "产品设计", group: "设计", avatar: true, keywords: ["lina"] },

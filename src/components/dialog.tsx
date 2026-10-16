@@ -1,3 +1,5 @@
+// shadcn/ui's Dialog. Changed: Esc inside an element marked data-escape="local" is that element's – a search with text clears first;
+// on close, focus goes back to what opened the dialog when it would otherwise be lost – a button that set open, not only a DialogTrigger
 "use client"
 
 import * as React from "react"
@@ -47,19 +49,49 @@ function DialogOverlay({
   )
 }
 
+/** Esc inside an element that handles it itself doesn't close the dialog */
+const keepLocalEscape = (e: KeyboardEvent) => {
+  if (e.target instanceof Element && e.target.closest('[data-escape="local"]')) e.preventDefault()
+}
+
 function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+  onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
+  // What had focus when the dialog opened: Radix only returns focus to a DialogTrigger
+  const opener = React.useRef<Element | null>(null)
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        onOpenAutoFocus={(e) => {
+          opener.current = document.activeElement
+          onOpenAutoFocus?.(e)
+        }}
+        onCloseAutoFocus={(e) => {
+          onCloseAutoFocus?.(e)
+          if (e.defaultPrevented) return
+          // Only when focus is lost – on the page or in the closing dialog; a host that moved it on purpose keeps it there
+          const now = document.activeElement
+          const lost = !now || now === document.body || (e.target instanceof Node && e.target.contains(now))
+          const back = opener.current
+          if (lost && back instanceof HTMLElement && back.isConnected && back !== document.body) {
+            e.preventDefault()
+            back.focus({ preventScroll: true })
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          keepLocalEscape(e)
+          onEscapeKeyDown?.(e)
+        }}
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className

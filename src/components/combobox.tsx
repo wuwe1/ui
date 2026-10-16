@@ -5,7 +5,8 @@
 // a mixer block's frame is as tall as its content and would cut a floating list. Phones keep the list under the field rather than in a bottom
 // sheet: the keyboard takes the lower half of the screen while you type.
 import { Check, ChevronDown, Plus, X } from "lucide-react";
-import { type KeyboardEvent, type MouseEvent, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { type KeyboardEvent, type MouseEvent, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useReducedMotion } from "../hooks/use-reduced-motion.ts";
 import { Kbd } from "./kbd.tsx";
 import { Popover, PopoverAnchor, PopoverContent } from "./popover.tsx";
 import { Skeleton } from "./skeleton.tsx";
@@ -68,13 +69,6 @@ const BODY =
 const ARMED = "bg-accent ring-foreground/25";
 const ROW = "relative z-10 flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-sm select-none pointer-coarse:h-11";
 
-const REDUCE = "(prefers-reduced-motion: reduce)";
-const subscribe = (f: () => void) => {
-	const m = matchMedia(REDUCE);
-	m.addEventListener("change", f);
-	return () => m.removeEventListener("change", f);
-};
-const useReduced = () => useSyncExternalStore(subscribe, () => matchMedia(REDUCE).matches, () => false);
 /** Rows, chips' × and the toggle keep the focus in the input */
 const keep = (e: MouseEvent) => e.preventDefault();
 
@@ -185,7 +179,7 @@ function Combobox({
 	const current = active < rows.length ? active : -1;
 	const [armed, setArmed] = useState<string | null>(null);
 	const [said, setSaid] = useState("");
-	const reduced = useReduced();
+	const reduced = useReducedMotion();
 	const shown = open && !disabled;
 
 	const rootRef = useRef<HTMLDivElement>(null);

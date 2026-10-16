@@ -1,5 +1,8 @@
 // Combobox's pure parts: what a search keeps, groups, the rows the keys walk, the chips that show, what's announced. Tested in test/combobox.test.ts.
 import type { LucideIcon } from "lucide-react";
+import { fold } from "./search.ts";
+
+export { ranges } from "./search.ts";
 
 export type ComboboxOption = {
 	value: string;
@@ -20,23 +23,11 @@ export type ComboboxOption = {
 /** A row the keys walk: an option, or the row that creates one from the text */
 export type Row = { kind: "option"; option: ComboboxOption } | { kind: "create"; text: string };
 
-const fold = (s: string) => s.toLocaleLowerCase();
-
 /** The label, hint or a keyword holds the text, ignoring case. Empty text matches everything */
 export function matches(o: ComboboxOption, text: string): boolean {
 	const q = fold(text.trim());
 	if (!q) return true;
 	return [o.label, o.hint ?? "", ...(o.keywords ?? [])].some((s) => fold(s).includes(q));
-}
-
-/** Where the text shows up: [start, end) pairs, left to right, not overlapping */
-export function ranges(s: string, text: string): [number, number][] {
-	const q = fold(text.trim());
-	if (!q) return [];
-	const hay = fold(s);
-	const out: [number, number][] = [];
-	for (let i = hay.indexOf(q); i !== -1; i = hay.indexOf(q, i + q.length)) out.push([i, i + q.length]);
-	return out;
 }
 
 /** Options under their headings: groups in the order they first appear, options in theirs. Ungrouped options form a group with no heading */
