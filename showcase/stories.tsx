@@ -1,5 +1,5 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { AppWindow, Bell, CircleAlert, FileText, GitFork, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
+import { AppWindow, Bell, CircleAlert, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
@@ -7,6 +7,9 @@ import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
 import { ContextWindow, type ContextPart } from "../src/components/context-window.tsx";
+import { Composer } from "../src/components/composer.tsx";
+import { ComposerSettings } from "../src/components/composer-settings.tsx";
+import { DictationButton, useDictation } from "../src/components/dictation.tsx";
 import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } from "../src/components/connection-card.tsx";
 import { Elapsed } from "../src/components/elapsed.tsx";
 import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
@@ -36,7 +39,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
-	{ label: "Agent", pages: ["Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "MessageActions", "ConnectionCard", "MemoryPanel"] },
+	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -200,6 +203,21 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Long", render: () => <AgentInbox items={LONG_RUNS} onOpen={() => {}} /> },
 		{ name: "Loading", render: () => <AgentInbox items={null} /> },
 		{ name: "Empty", render: () => <AgentInbox items={[]} empty={<InboxEmpty><Button variant="outline" size="sm"><SquarePen />新会话</Button></InboxEmpty>} /> },
+	],
+	Composer: [
+		{ name: "Empty", render: () => <Compose /> },
+		{ name: "Typed", render: () => <Compose text={"把 Composer 搬进组件库\n先看懂，再重新设计"} /> },
+		{ name: "Running", render: () => <Compose running /> },
+		{ name: "Stopping", render: () => <Compose running stopping /> },
+		{ name: "Sending", render: () => <Compose text="提交吧" busy /> },
+		{ name: "Hearing", render: () => <Compose text="把首页标题" interim="改成 Inbox 然后" /> },
+		{ name: "Attachments", render: () => <Compose text="看看这两张" attachments /> },
+		{ name: "Dialog", render: () => <Compose size="lg" /> },
+	],
+	ComposerSettings: [
+		{ name: "Default", render: () => <Settings /> },
+		{ name: "Not the defaults", render: () => <Settings model="claude-opus-4-8" effort="high" permission="plan" /> },
+		{ name: "No effort", render: () => <Settings model="haiku" /> },
 	],
 	Outline: [
 		{ name: "Default", render: () => <Doc n={12} /> },
@@ -503,6 +521,70 @@ function Runs({ open, loadingSteps, live }: { open?: boolean; loadingSteps?: boo
 			/>
 		</div>
 	);
+}
+
+/** A composer wired like a host would: ↵ sends (a toast), then it runs for 3 seconds with a tray and a stop */
+function Compose({ text: t0 = "", running: r0 = false, stopping, busy, interim, attachments, size = "sm" }: { text?: string; running?: boolean; stopping?: boolean; busy?: boolean; interim?: string; attachments?: boolean; size?: "sm" | "lg" }) {
+	const [text, setText] = useState(t0);
+	const [running, setRunning] = useState(r0);
+	const dictation = useDictation({ onText: (x) => setText((t) => t + x) });
+	const send = () => {
+		toast("已发送", { description: text });
+		setText("");
+		setRunning(true);
+		setTimeout(() => setRunning(false), 3000);
+	};
+	return (
+		<div className="flex min-h-40 flex-col justify-end">
+			<Composer
+				size={size}
+				value={text}
+				onValueChange={setText}
+				onSubmit={send}
+				placeholder={running ? "运行中，发送后排队…" : size === "lg" ? "要 Claude 做什么…" : "继续…"}
+				tray={running ? <span className="flex items-center gap-1.5"><StatusIcon s="running" label={null} className="size-3.5" /><span className="text-foreground">{stopping ? "停止中" : "运行中"}</span><Elapsed since={Date.now()} /></span> : null}
+				interim={interim ?? dictation.interim}
+				top={attachments ? <div className="flex gap-1.5 px-1 pt-0.5">{["#c7d2fe", "#fde68a"].map((c) => <span key={c} className="size-14 rounded-lg border" style={{ background: c }} />)}</div> : null}
+				start={<><Button variant="ghost" size="icon-sm" className="text-muted-foreground" aria-label="添加"><Plus className="size-4" /></Button><Settings compact /></>}
+				end={<><span className="px-1 text-2xs text-muted-foreground tabular-nums">62%</span><DictationButton dictation={dictation} /></>}
+				send={{ label: "发送", disabled: !text.trim(), busy }}
+				stop={running ? { onStop: () => setRunning(false), stopping: !!stopping } : undefined}
+			/>
+		</div>
+	);
+}
+
+const MODELS = [
+	{ value: "", label: "默认", description: "用 Claude Code 的设置" },
+	{ value: "opus", label: "Opus 5.5", description: "当前：Opus 5.5" },
+	{ value: "sonnet", label: "Sonnet 5.5", description: "Sonnet 最新版，有新版本时自动切换" },
+	{ value: "haiku", label: "Haiku 5.5", description: "Haiku 最新版，有新版本时自动切换", badge: "新" },
+];
+const PINNED = [{ value: "claude-opus-4-8", label: "Opus 4.8" }, { value: "claude-sonnet-4-6", label: "Sonnet 4.6" }];
+const EFFORT = [["", "默认"], ["low", "低"], ["medium", "中"], ["high", "高"], ["xhigh", "很高"]] as const;
+const PERMS = [
+	{ value: "auto", icon: Sparkles, label: "自动", description: "直接执行，有风险的才请求确认" },
+	{ value: "default", icon: Hand, label: "每次询问", description: "改文件、运行命令前都请求确认" },
+	{ value: "plan", icon: ListChecks, label: "计划", description: "只读不改，先出计划" },
+];
+/** The settings chip as mixer wires it; compact – inside a Composer story */
+function Settings({ model: m0 = "opus", effort: e0 = "", permission: p0 = "auto", compact }: { model?: string; effort?: string; permission?: string; compact?: boolean }) {
+	const [model, setModel] = useState(m0);
+	const [effort, setEffort] = useState(e0);
+	const [permission, setPermission] = useState(p0);
+	const name = [...MODELS, ...PINNED].find((x) => x.value === model)?.label ?? model;
+	const muted = [EFFORT.find(([v]) => v === effort && v)?.[1], permission !== "auto" && PERMS.find((x) => x.value === permission)?.label].filter(Boolean).join(" ");
+	const chip = (
+		<ComposerSettings
+			summary={<>{name}{muted && <span className="ml-1 opacity-70">{muted}</span>}</>}
+			sections={[
+				{ id: "model", label: "模型", kind: "list", value: model, onChange: setModel, options: MODELS, more: { label: "更多版本", options: PINNED } },
+				...(model === "haiku" ? [] : [{ id: "effort", label: "思考强度", kind: "segmented" as const, value: effort || "default", onChange: (v: string) => setEffort(v === "default" ? "" : v), options: EFFORT.map(([v, l]) => ({ value: v || "default", label: l })) }]),
+				{ id: "permission", label: "权限", kind: "segmented", value: permission, onChange: setPermission, options: PERMS },
+			]}
+		/>
+	);
+	return compact ? chip : <div className="flex min-h-12 items-end">{chip}</div>;
 }
 
 const PROMPTS = ["把首页改成 Inbox", "确认卡片换成库里的", "Memory 分组能拖着滚", "Context Window 压缩时扫光", "加载用 Skeleton", "目录做成 Outline", "补 StatusIcon 的规格", "截图看手机深色", "提交", "下一个搬什么"];
