@@ -11,6 +11,7 @@ import { Composer } from "../src/components/composer.tsx";
 import { ComposerSettings } from "../src/components/composer-settings.tsx";
 import { DictationButton, useDictation } from "../src/components/dictation.tsx";
 import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } from "../src/components/connection-card.tsx";
+import { DataGrid, type DataGridColumn, type DataGridRow, type DataGridSelection, type DataGridTone } from "../src/components/data-grid.tsx";
 import { Elapsed } from "../src/components/elapsed.tsx";
 import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
 import { Input } from "../src/components/input.tsx";
@@ -46,6 +47,7 @@ export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
 	{ label: "Agent", pages: ["Composer", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff"] },
+	{ label: "Data", pages: ["DataGrid"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "SegmentedControl", "Tabs", "Card", "Alert", "Feedback"] },
@@ -347,6 +349,20 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Long", render: () => <Prompts initial={PL_LONG} defaultValue="listing" /> },
 		{ name: "Narrow", render: () => <div className="max-w-[360px]"><Prompts /></div> },
 	],
+	DataGrid: [
+		{ name: "Default", render: () => <Grid /> },
+		{ name: "Grouped", render: () => <Grid rows={DG_GROUPED} group /> },
+		{ name: "Collapsed", render: () => <Grid rows={DG_GROUPED} group collapsed={["缺货源", "待 1688 付款"]} start={{ rows: DG_GROUPED.filter((r) => r.step === "缺货源").map((r) => r.id) }} /> },
+		{ name: "Rows selected", render: () => <Grid start={{ rows: DG_ROWS.slice(1, 4).map((r) => r.id) }} /> },
+		{ name: "Block selected", render: () => <Grid start={{ rows: DG_ROWS.slice(2, 4).map((r) => r.id), columns: ["item", "step"] }} /> },
+		{ name: "Columns selected", render: () => <Grid start={{ rows: DG_ROWS.map((r) => r.id), columns: ["step"] }} /> },
+		{ name: "Loading", render: () => <Grid rows={null} height="" /> },
+		{ name: "Empty", render: () => <Grid rows={[]} height="" empty="订单都处理完了" /> },
+		{ name: "Long", render: () => <Grid rows={DG_LONG} columns={DG_WIDE} /> },
+		{ name: "Many", render: () => <Grid rows={DG_MANY} group /> },
+		{ name: "No images", render: () => <Grid columns={DG_COLUMNS.filter((c) => c.type !== "image")} /> },
+		{ name: "Narrow", render: () => <div className="w-[390px] max-w-full"><Grid /></div> },
+	],
 	InlineDiff: [
 		{ name: "Default", render: () => <Edits a={COPY_A} b={COPY_B} ask="改短一点" /> },
 		{ name: "Deciding", render: () => <Act run={(el) => el.querySelectorAll<HTMLElement>("[data-change]")[1]?.focus()}><Edits a={COPY_A} b={COPY_B} ask="改短一点" /></Act> },
@@ -486,6 +502,128 @@ const MR_LONG: MatchPair[] = [MR_P2, MR_P1].map((p) => ({
 }));
 
 /** A review wired like a host: 「完成」 saves for a moment, then the card is settled */
+const DAY = 86_400_000;
+/** Orders the way Penna shows them: what's in them, where each one waits, and whose turn it is */
+const DG_ITEMS = [
+	{ name: "卡通kitty貓硅藻泥地墊 入戶門衛生間防滑", spec: "03,60*90", hue: 340, mark: "墊", offer: "1045874691879" },
+	{ name: "特粗雙桿移動式落地衣帽架 家用臥室陽台", spec: "特粗26管雙桿100黑+輪", hue: 30, mark: "架", offer: "998618382272" },
+	{ name: "不鏽鋼登山扣磁鐵 旋轉掛鉤吸鐵石", spec: "L32銀色（最大拉力45kg）", hue: 210, mark: "扣", offer: "896904099831" },
+	{ name: "磁吸手繩手機掛繩 編織手腕繩", spec: "（单规格）", hue: 120, mark: "繩", offer: "923574283809" },
+	{ name: "門後洞洞板置物架 落地窄縫收納架", spec: "52×11.8×188 加厚款", hue: 260, mark: "板", offer: "860316641707" },
+	{ name: "男士單肩斜挎包 簡約休閒旅行胸包", spec: "黑色", hue: 0, mark: "包", offer: "" },
+];
+const DG_STEPS: { step: string; note: string }[] = [
+	{ step: "缺货源", note: "没填货源链接" },
+	{ step: "规格不匹配", note: "「03,60*90」在货源里配不上" },
+	{ step: "待加购", note: "" },
+	{ step: "待 1688 付款", note: "" },
+	{ step: "待预报", note: "" },
+	{ step: "待到齐", note: "未到：衣帽架 / 100黑+輪" },
+	{ step: "待打包", note: "" },
+	{ step: "已打包", note: "" },
+];
+const DG_SHOPS = ["新新家居日用好物賣場", "Nydia’s shop✨家居好物"];
+const dgTone = (v: unknown): DataGridTone | undefined =>
+	v === "待到齐" ? "running" : v === "已打包" ? "done" : DG_STEPS.some((s) => s.step === v) ? "waiting" : undefined;
+const DG_COLUMNS: DataGridColumn[] = [
+	{ key: "sn", label: "订单号" },
+	{ key: "image", label: "图", type: "image" },
+	{ key: "item", label: "商品", maxWidth: 240 },
+	{ key: "step", label: "当前步骤", type: "tag", tone: dgTone },
+	{ key: "note", label: "说明", maxWidth: 320 },
+	{ key: "days", label: "剩几天", type: "number" },
+	{ key: "shop", label: "店铺" },
+	{ key: "shipBy", label: "出货期限", type: "date" },
+	{ key: "createdAt", label: "下单时间", type: "date" },
+	{ key: "url", label: "货源链接", type: "link" },
+	{ key: "forecast", label: "已预报", type: "check" },
+];
+const SN = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
+const snOf = (n: number) => `2610${String(10 + (n % 7)).padStart(2, "0")}${Array.from({ length: 8 }, (_, i) => SN[(n * 7 + i * 13 + n * i) % SN.length]).join("")}`;
+function dgRow(n: number, now = Date.now()): DataGridRow {
+	const it = DG_ITEMS[n % DG_ITEMS.length]!;
+	const st = DG_STEPS[(n * 3) % DG_STEPS.length]!;
+	const days = 2 + ((n * 5) % 16);
+	return {
+		id: `o${n}`,
+		sn: snOf(n),
+		image: it.offer ? [tile(it.hue, it.mark), ...(n % 4 === 0 ? [tile(it.hue + 40, it.mark)] : [])] : [tile(it.hue, it.mark)],
+		item: `${it.name} / ${it.spec} × ${1 + (n % 3)}`,
+		step: st.step,
+		note: st.note,
+		days,
+		shop: DG_SHOPS[n % 2],
+		shipBy: now + days * DAY,
+		createdAt: now - ((n * 37) % 11) * DAY - ((n * 53) % 9) * 3_600_000,
+		url: it.offer ? `https://detail.1688.com/offer/${it.offer}.html?spm=a360q.8274423` : "",
+		forecast: st.step === "待到齐" || st.step === "待打包" || st.step === "已打包",
+	};
+}
+const DG_ROWS = Array.from({ length: 14 }, (_, n) => dgRow(n));
+const byStep = (rows: DataGridRow[]) => [...rows].sort((a, b) => DG_STEPS.findIndex((s) => s.step === a.step) - DG_STEPS.findIndex((s) => s.step === b.step));
+const DG_GROUPED = byStep(DG_ROWS);
+const DG_MANY = byStep(Array.from({ length: 5000 }, (_, n) => dgRow(n)));
+const DG_LONG = DG_ROWS.map((r, n) => ({
+	...r,
+	item: `${r.item}，這一行很長：商品名後面還跟著規格、數量、材質說明和賣家寫的一大段促銷文字，看它怎麼截斷`,
+	note: n % 2 ? "「特粗26管【雙層側三網】150白色+移動輪」在货源「特粗雙桿移動式落地衣帽架 家用臥室陽台掛衣架 宿舍衣架」里配不上" : r.note,
+	purchase: n % 3 ? "3048912773019844521、3048912773019844522" : "",
+	chanboss: ["待处理", "已预报", "已打包"][n % 3],
+	shopee: ["待出货", "已出货"][n % 2],
+	problem: n === 5 ? "包裹破損，買家要求重寄" : "",
+	readAt: Date.now() - n * 600_000,
+}));
+const DG_WIDE: DataGridColumn[] = [
+	...DG_COLUMNS,
+	{ key: "purchase", label: "采购单" },
+	{ key: "chanboss", label: "chanboss 状态", type: "tag" },
+	{ key: "shopee", label: "Shopee 状态", type: "tag" },
+	{ key: "problem", label: "问题单" },
+	{ key: "readAt", label: "读取时间", type: "date" },
+];
+/** What a host would make of the selection – here a line under the grid, in Penna a reference in the composer */
+function picked(s: DataGridSelection, rows: DataGridRow[], columns: DataGridColumn[]) {
+	if (!s) return "未选择";
+	const names = (ids: string[]) => {
+		const sns = ids.slice(0, 3).map((id) => String(rows.find((r) => r.id === id)?.sn ?? id));
+		return ids.length > 3 ? `${sns.join("、")} 等 ${ids.length} 行` : sns.join("、");
+	};
+	if (!s.columns) return `已选 ${names(s.rows)}`;
+	const cols = s.columns.map((k) => columns.find((c) => c.key === k)?.label ?? k).join("、");
+	return s.rows.length === rows.length && rows.length > 1 ? `已选整列：${cols}` : `已选 ${names(s.rows)} 的 ${cols}`;
+}
+function Grid({
+	rows = DG_ROWS,
+	columns = DG_COLUMNS,
+	start = null,
+	group,
+	collapsed,
+	height = "h-[440px]",
+	empty,
+}: { rows?: DataGridRow[] | null; columns?: DataGridColumn[]; start?: DataGridSelection; group?: boolean; collapsed?: string[]; height?: string; empty?: string }) {
+	const [selection, setSelection] = useState<DataGridSelection>(start);
+	const sn = (id: string) => String(rows?.find((r) => r.id === id)?.sn ?? id);
+	return (
+		<div className="flex flex-col gap-2">
+			<div className={height}>
+				<DataGrid
+					label="订单"
+					columns={columns}
+					rows={rows}
+					group={group ? { key: "step" } : undefined}
+					defaultCollapsed={collapsed}
+					selection={selection}
+					onSelectionChange={setSelection}
+					onOpen={(id) => toast(`打开订单 ${sn(id)}`)}
+					onLink={(url) => toast(`打开 ${url}`)}
+					empty={empty}
+				/>
+			</div>
+			{rows && rows.length > 0 && <p className="truncate px-1 text-xs text-muted-foreground">{picked(selection, rows, columns)}</p>}
+		</div>
+	);
+}
+
 function Matches({ pairs }: { pairs: MatchPair[] }) {
 	return (
 		<MatchReview
