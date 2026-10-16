@@ -8,17 +8,17 @@ export type Mark = "waiting" | "running" | "background" | "done" | "error" | "te
 const STATUS_LABEL: Record<Exclude<Mark, null>, string> = { waiting: "待确认", running: "运行中", background: "后台任务运行中", done: "已完成，未读", error: "出错，未读", terminal: "终端中打开", ok: "成功", failed: "失败" };
 
 /**
- * Solid dot – look at this: amber waiting (with a ripple), blue done and unread, red error and unread. Blue dot with a ripple – running.
+ * Solid dot – look at this: amber waiting (with a ripple), green done and unread, red error and unread. Blue dot with a ripple – running.
  * Blue ring with a ripple – background tasks running while Claude idles; they wake it when done. Gray ring – open in a terminal.
  * A finished tool step: green ok, red failed.
- * Colors mean only this: amber needs you, red error, blue unseen or running, green a step succeeded, gray neutral
+ * Colors mean only this: amber needs you, red error, blue running, green finished – a run done and unseen, a step that succeeded – gray neutral
  */
 export function StatusIcon({ s, className }: { s: Mark; className?: string }) {
 	const icon =
 		s === "waiting" ? <Ping dot="bg-waiting" />
 		: s === "running" ? <Ping dot="bg-unread" />
 		: s === "background" ? <Ping dot="border border-unread" />
-		: s === "done" ? <span className="size-2 rounded-full bg-unread" />
+		: s === "done" ? <span className="size-2 rounded-full bg-success" />
 		: s === "error" || s === "failed" ? <span className="size-2 rounded-full bg-destructive" />
 		: s === "ok" ? <span className="size-2 rounded-full bg-success" />
 		: s === "terminal" ? <span className="size-2 rounded-full border border-muted-foreground" />
@@ -31,7 +31,7 @@ export function StatusIcon({ s, className }: { s: Mark; className?: string }) {
 }
 /**
  * A dot with a ripple; dot is its look (a fill or a border) and the ripple copies it.
- * Reduced motion – the ripple stands still as a faint ring; without it, running and done-unread would be the same blue dot.
+ * Reduced motion – the ripple stands still as a faint ring, so running still reads apart from a still dot.
  * The ripple animates on its own compositing layer, which snaps fractional pixels differently and drifts half a pixel (worst on rings) – so the dot gets a layer too
  */
 function Ping({ dot }: { dot: string }) {

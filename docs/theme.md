@@ -13,7 +13,7 @@ Components use only the last layer: `bg-background`, `text-muted-foreground`, `t
 | Knob | Controls |
 |---|---|
 | `neutral` | The gray tint, per mode |
-| `signals` | Seven colors with fixed meanings: `waiting` needs you, `unread` new or running, `success`, `destructive`, `added`, `modified`, `renamed` |
+| `signals` | Seven colors with fixed meanings: `waiting` needs you, `unread` running, `success` finished – a run done, a step that succeeded, `destructive`, `added`, `modified`, `renamed` |
 | `series` | Eight chart colors, checked for color blindness |
 | `radius` | The base corner radius |
 
