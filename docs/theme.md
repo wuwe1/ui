@@ -6,7 +6,7 @@ Turn a few knobs; every color follows. Tests hold text contrast. Themes and mode
 
 Knobs (`themes.ts`) → tokens (derived in `roles.ts`, generated into `tokens.css`) → Tailwind names (`theme.css`).
 
-Components use only the last layer: `bg-background`, `text-muted-foreground`, `text-waiting-strong`. Never `amber-500`, `#fff` or `text-[13px]`.
+Components use only the last layer: `bg-background`, `text-muted-foreground`, `text-waiting-strong`. Never `amber-500`, `#fff` or `text-[13px]`. `test/tokens-only.test.ts` fails on palette classes, hex, color functions and opaque black or white; `color-mix()` of tokens and `bg-black/10` scrims pass.
 
 ## Knobs
 
