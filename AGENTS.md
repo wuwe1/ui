@@ -18,7 +18,7 @@ Done means check and test pass. A changed component or theme is checked on the s
 | `src/components/` | One component per file, imported as `@wuwe1/ui/<file>` |
 | `src/styles.css` | The entry projects import |
 | `showcase/` | The showcase |
-| `docs/` | `theme.md`; `principles.md` – level of finish; `writing.md` – prose, naming, UI copy; `components/` – specs |
+| `docs/` | `theme.md`; `principles.md` – level of finish and craft; `motion.md` – the motion vocabulary; `writing.md` – prose, naming, UI copy; `components/` – specs |
 | `.claude/skills/component/` | How to build a component |
 
 Each file says what it does in its first comment.

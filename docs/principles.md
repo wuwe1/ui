@@ -48,6 +48,22 @@ Lists keep their status dots – a dot is a status, not a loader. Never put a sp
 - Things glide to their new place, never jump; numbers are `tabular-nums` so they don't jitter
 - Reduced motion – movement becomes a fade, loops stand still, no information is lost
 
+## Craft
+
+What makes a component look made, not assembled. Each line was measured on affectUI; check them all before showing anything.
+
+- Real content – real names, files, numbers in every story; never 「Item 1」
+- Type in layers – the name 13px medium, its hint 12px `muted-foreground` on the same baseline; numbers `tabular-nums`
+- Tray and card – an agent's item is a `Tray`: content in the card, the system's voice on the tray (`components/tray.md`)
+- Concentric corners – an inner radius is the outer one less the padding between them: tray 18, card 14, a row in it 10
+- Light lines, two lifts – a 1px border or a hairline ring; `shadow-rest` or `shadow-float`, nothing else (`theme.md`)
+- One curve – `ease-out-strong` in, `ease-in-strong` out; an overshoot only inside a named pop (`motion.md`)
+- Moments – every change a person must notice has a cue from `motion.md`, where their eyes already are
+- No dead ends – an empty search offers the next step; a failure keeps the item, its reason and a retry
+- Preview before commit – show what an action will do before it does it, when undoing is costly
+- Objects over boxes – give an invisible state a shape: cells for a context window, a stack for waiting messages
+- Stories that play – a Live story runs the component's life on its own, the failure included
+
 ## Responsive
 
 - Phone under 768px, tablet to 1023px, desktop from 1024px

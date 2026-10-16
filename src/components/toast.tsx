@@ -256,7 +256,7 @@ function Face({ t, innerRef, behind, frontH, paused, onClose }: { t: ToastItem; 
 	return (
 		<div
 			ref={innerRef}
-			className="relative flex min-h-12 items-center overflow-hidden rounded-lg border bg-popover py-2 pr-1.5 pl-3 text-popover-foreground shadow-md"
+			className="relative flex min-h-12 items-center overflow-hidden rounded-lg border bg-popover py-2 pr-1.5 pl-3 text-popover-foreground shadow-float"
 			style={behind ? { height: frontH } : undefined}
 		>
 			<div className={cn("flex min-w-0 flex-1 items-center gap-2.5 transition-opacity duration-150", behind && "opacity-0")}>

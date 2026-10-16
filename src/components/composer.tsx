@@ -79,7 +79,7 @@ function Composer({ value, onValueChange, onSubmit, placeholder, size = "sm", au
 					}
 				}}
 				className={cn(
-					"flex cursor-text flex-col rounded-xl border bg-card shadow-xs transition-[border-color,box-shadow] duration-150",
+					"flex cursor-text flex-col rounded-xl border bg-card shadow-rest transition-[border-color,box-shadow] duration-150",
 					sm ? "gap-1 p-1.5 focus-within:border-ring" : "gap-2 p-2 focus-within:ring-3 focus-within:ring-ring/30",
 				)}
 			>

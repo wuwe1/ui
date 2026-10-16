@@ -8,6 +8,7 @@ import { Chevron } from "./placeholder.tsx";
 import { Shimmer } from "./shimmer.tsx";
 import { type Mark, StatusIcon } from "./status-icon.tsx";
 import { type ConnectionMark, MARK_LABEL, needsYou, openAfter } from "../lib/connection.ts";
+import { Tray, TrayCard } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { ConnectionMark } from "../lib/connection.ts";
@@ -61,9 +62,10 @@ function ConnectionCard({ icon, name, mark = "off", status, checking = false, de
 		onOpenChange?.(o);
 	};
 	return (
-		<Collapsible data-slot="connection-card" open={shown} onOpenChange={toggle} className={cn("rounded-2xl bg-muted p-1.5 text-sm", className)}>
+		<Collapsible data-slot="connection-card" open={shown} onOpenChange={toggle} asChild>
+			<Tray className={cn("text-sm", className)}>
 			<div className="group/header relative flex items-center gap-3 p-1.5">
-				<span className="grid size-9 shrink-0 place-items-center self-start overflow-hidden rounded-lg bg-card text-muted-foreground shadow-xs ring-1 ring-foreground/10 [&_img]:size-5 [&_svg:not([class*='size-'])]:size-5">
+				<span className="grid size-9 shrink-0 place-items-center self-start overflow-hidden rounded-lg bg-card text-muted-foreground shadow-rest ring-1 ring-foreground/10 [&_img]:size-5 [&_svg:not([class*='size-'])]:size-5">
 					{icon}
 				</span>
 				<div className="min-w-0 flex-1">
@@ -87,11 +89,12 @@ function ConnectionCard({ icon, name, mark = "off", status, checking = false, de
 				{body && <Chevron open={shown} className="size-3.5 transition-[color,rotate] group-hover/header:text-foreground" />}
 			</div>
 			<CollapsibleContent className={SLIDE}>
-				<div className="mt-1 rounded-xl border bg-card text-card-foreground shadow-xs">
+				<TrayCard>
 					{rows && <ul className="flex flex-col p-1">{children}</ul>}
 					{footer && <div className={cn("flex flex-col items-start gap-1 px-1 pb-1", !rows && "pt-1")}>{footer}</div>}
-				</div>
+				</TrayCard>
 			</CollapsibleContent>
+			</Tray>
 		</Collapsible>
 	);
 }

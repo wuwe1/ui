@@ -73,7 +73,7 @@ function ThinkingLoader({ label = "正在等待回复…", since, done = false, 
 			role="status"
 			data-slot="thinking-loader"
 			data-variant={variant}
-			className={cn("flex w-fit max-w-full items-center gap-2 text-xs text-muted-foreground", variant === "pill" && "rounded-full border bg-background px-3 py-1 shadow-xs", className)}
+			className={cn("flex w-fit max-w-full items-center gap-2 text-xs text-muted-foreground", variant === "pill" && "rounded-full border bg-background px-3 py-1 shadow-rest", className)}
 		>
 			{done && <Check className="size-3.5 shrink-0 animate-in fade-in duration-200 ease-out-strong motion-safe:zoom-in-50" aria-hidden />}
 			<Roll text={text} active={!done} />

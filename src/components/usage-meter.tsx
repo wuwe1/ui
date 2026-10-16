@@ -10,6 +10,7 @@ import { Placeholder } from "./placeholder.tsx";
 import { Skeleton } from "./skeleton.tsx";
 import { Spinner } from "./spinner.tsx";
 import { elapsed, level, live, percent, runOut, type UsageWindow, updated, urgent, when } from "../lib/usage-meter.ts";
+import { Tray, TrayCard } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { UsageWindow } from "../lib/usage-meter.ts";
@@ -137,14 +138,14 @@ function AccountCard({ a, now, warnAt, onRefresh }: { a: UsageAccount; now: numb
 	};
 	return (
 		<section aria-label={a.label} className="flex flex-col gap-1.5">
-			<div className="flex flex-col gap-4 rounded-xl border bg-card p-3 text-card-foreground shadow-xs">
+			<TrayCard className="flex flex-col gap-4 p-3">
 				<div className="flex min-w-0 items-center gap-2">
 					<span className="truncate text-sm font-medium">{a.label}</span>
 					{a.plan && <span className="shrink-0 rounded-md border bg-background px-1.5 py-0.5 font-mono text-2xs text-muted-foreground">{a.plan}</span>}
 				</div>
 				{a.windows?.map((w) => <WindowRow key={w.label} w={w} now={now} warnAt={warnAt} />)}
 				{a.table && <Table t={a.table} />}
-			</div>
+			</TrayCard>
 			{(a.at !== undefined || a.note) && (
 				<div className="flex flex-col gap-0.5 px-1.5 pb-1">
 					{a.at !== undefined && (
@@ -186,17 +187,17 @@ function UsageMeter({ accounts, warnAt = 0.8, onRefresh, emptyNote = "各个账�
 	if (!accounts) return <Loading title={title} className={className} />;
 	if (!accounts.length) return <Placeholder icon={Gauge} title="暂无用量" text={emptyNote} className={cn("rounded-2xl bg-muted px-4 py-8", className)} />;
 	return (
-		<div role="group" aria-label={title} data-slot="usage-meter" className={cn("flex flex-col gap-3 rounded-2xl bg-muted p-1.5", className)}>
+		<Tray role="group" aria-label={title} data-slot="usage-meter" className={cn("gap-3", className)}>
 			{accounts.map((a) => <AccountCard key={a.id} a={a} now={now} warnAt={warnAt} onRefresh={onRefresh} />)}
-		</div>
+		</Tray>
 	);
 }
 
 /** Loading: the card's shape – head, two windows, the tray – so nothing jumps when the numbers land */
 function Loading({ title, className }: { title: string; className?: string }) {
 	return (
-		<div role="group" aria-label={title} aria-busy="true" data-slot="usage-meter" className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}>
-			<div className="flex flex-col gap-4 rounded-xl border bg-card p-3 shadow-xs">
+		<Tray role="group" aria-label={title} aria-busy="true" data-slot="usage-meter" className={cn("gap-1.5", className)}>
+			<TrayCard className="flex flex-col gap-4 p-3">
 				<div className="flex h-5 items-center">
 					<Skeleton className="h-3.5 w-20" />
 				</div>
@@ -212,11 +213,11 @@ function Loading({ title, className }: { title: string; className?: string }) {
 						</div>
 					</div>
 				))}
-			</div>
+			</TrayCard>
 			<div className="flex h-7 items-center px-1.5 pb-1">
 				<Skeleton className="h-3 w-28" />
 			</div>
-		</div>
+		</Tray>
 	);
 }
 

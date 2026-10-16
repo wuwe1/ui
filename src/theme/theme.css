@@ -96,6 +96,14 @@
 	--leading-code: 1.6;
 
 	/*
+	 * Elevation – two shadows, never Tailwind's scale (test/elevation.test.ts); their colors are the shade tokens, which mode decides. rest: what rests on a surface – a card in a tray, a pill on a track.
+	 * float: what floats over the page – menus, popovers, toasts, a floating tray; pair it with a hairline ring. Its wide part spreads negative,
+	 * so it sinks under the edge instead of spilling sideways
+	 */
+	--shadow-rest: 0 1px 2px var(--shade-rest);
+	--shadow-float: 0 4px 12px -4px var(--shade-near), 0 18px 40px -12px var(--shade-far);
+
+	/*
 	 * Easings. out to enter – fast, then settling; in to exit – slow, then gone.
 	 * drawer for anything that follows a finger – iOS's curve, carrying the release velocity home. Durations and reduced motion: docs/principles.md
 	 */

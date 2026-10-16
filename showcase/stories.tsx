@@ -37,6 +37,7 @@ import { Spinner } from "../src/components/spinner.tsx";
 import { type Mark, StatusIcon, statusLabel } from "../src/components/status-icon.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../src/components/tabs.tsx";
 import { ThinkingLoader } from "../src/components/thinking-loader.tsx";
+import { Tray, TrayCard, TrayLabel } from "../src/components/tray.tsx";
 import { ToolCall, ToolCallGroup, type ToolCallItem } from "../src/components/tool-call.tsx";
 import { Textarea } from "../src/components/textarea.tsx";
 import { toast } from "../src/components/toast.tsx";
@@ -55,7 +56,7 @@ export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Data", pages: ["DataGrid"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
-	{ label: "Base", pages: ["Button", "Badge", "Input", "SegmentedControl", "Tabs", "Card", "Alert", "Feedback"] },
+	{ label: "Base", pages: ["Button", "Badge", "Input", "SegmentedControl", "Tabs", "Card", "Tray", "Alert", "Feedback"] },
 ];
 
 const row = "flex flex-wrap items-center gap-2";
@@ -127,6 +128,25 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Long", render: () => <Sessions rows={SESSIONS_LONG} /> },
 		{ name: "Many", render: () => <Sessions rows={SESSIONS_MANY} /> },
 		{ name: "Dialog", render: () => <SessionDialog /> },
+	],
+	Tray: [
+		{ name: "Default", render: () => <TrayDemo /> },
+		{ name: "Card only", render: () => <Tray className="max-w-md"><TrayCard className="p-3 text-md">把导出的 PDF 换成按章节分页、目录可点、页眉带书名。</TrayCard></Tray> },
+		{
+			name: "Several cards",
+			render: () => (
+				<Tray className="max-w-md gap-3">
+					{["个人", "团队"].map((who, i) => (
+						<TrayCard key={who} className="flex flex-col gap-1 p-3">
+							<span className="text-sm font-medium">Claude {who}</span>
+							<span className="text-xs text-muted-foreground tabular-nums">本周已用 {i ? 41 : 75}%</span>
+						</TrayCard>
+					))}
+				</Tray>
+			),
+		},
+		{ name: "Floating", render: () => <div className="relative grid h-56 max-w-md place-items-center overflow-hidden rounded-lg bg-[repeating-linear-gradient(45deg,var(--muted)_0_8px,transparent_8px_16px)] p-6"><TrayDemo float /></div> },
+		{ name: "Paper theme", render: () => <div data-theme="paper" className="rounded-lg bg-background p-4 text-foreground"><TrayDemo /></div> },
 	],
 	Combobox: [
 		{ name: "Default", render: () => <div className="max-w-md"><Reviewers start={["wangxm", "chenyu"]} /></div> },
@@ -1395,6 +1415,31 @@ function NoBrowser() {
 }
 
 /** Runs a step on the story once it's on screen – focus a blank, type a search, open the editor */
+/** A tray as an agent's item: what it is on top, the card, the answer under it. Rows inside the card show the corners nesting: 18, 14, 10 */
+function TrayDemo({ float }: { float?: boolean }) {
+	const [on, setOn] = useState(0);
+	return (
+		<Tray float={float} className="w-full max-w-md">
+			<TrayLabel>清理 memory：mixer 项目</TrayLabel>
+			<TrayCard className="flex flex-col p-1">
+				{["UX Writing 统一", "旧的部署说明", "先讨论再动手"].map((t, i) => (
+					<button key={t} type="button" onClick={() => setOn(i)} className={cn("flex h-9 items-center justify-between rounded-lg px-2.5 text-left text-md", on === i && "bg-accent")}>
+						<span>{t}</span>
+						<span className="text-xs text-muted-foreground">{i === 1 ? "建议删除" : "建议保留"}</span>
+					</button>
+				))}
+			</TrayCard>
+			<div className="flex items-center justify-between gap-2 px-2 pb-0.5">
+				<span className="text-xs text-muted-foreground">待定 3</span>
+				<div className="flex gap-1.5">
+					<Button variant="ghost" size="sm">撤销</Button>
+					<Button size="sm">完成</Button>
+				</div>
+			</div>
+		</Tray>
+	);
+}
+
 const BOX = "max-w-md rounded-lg! border bg-transparent";
 const DIRS = [
 	{ name: "mixer", git: true, project: true },

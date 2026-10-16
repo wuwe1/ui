@@ -278,7 +278,7 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 			{/* A finger dragging: the item floats above-left of it, clear of the thumb */}
 			{drag && pointed && (
 				<div
-					className={cn("pointer-events-none absolute right-full mr-2 w-max max-w-[min(18rem,calc(100vw-4rem))] rounded-lg bg-popover px-3 py-2 text-md text-popover-foreground shadow-md ring-1 ring-foreground/10", above && "-translate-y-full")}
+					className={cn("pointer-events-none absolute right-full mr-2 w-max max-w-[min(18rem,calc(100vw-4rem))] rounded-lg bg-popover px-3 py-2 text-md text-popover-foreground shadow-float ring-1 ring-foreground/10", above && "-translate-y-full")}
 					style={{ top: above ? drag.y - 8 : drag.y + 28 }}
 				>
 					{drag.away ? (

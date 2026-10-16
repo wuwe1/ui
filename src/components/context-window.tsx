@@ -9,6 +9,7 @@ import { Button } from "./button.tsx";
 import { Shimmer } from "./shimmer.tsx";
 import { Skeleton } from "./skeleton.tsx";
 import { cells, percent, tokens } from "../lib/context-window.ts";
+import { Tray, TrayCard } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type ContextItem = { id: string; label: ReactNode; tokens: number; mono?: boolean; title?: string };
@@ -109,8 +110,8 @@ function ContextWindow({ parts, limit, title = "上下文", hideTitle, model, th
 	};
 
 	return (
-		<div ref={root} role="group" aria-label={title} data-slot="context-window" className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}>
-			<div className="flex flex-col gap-3 rounded-xl border bg-card p-3 text-card-foreground shadow-xs">
+		<Tray ref={root} role="group" aria-label={title} data-slot="context-window" className={className}>
+			<TrayCard className="flex flex-col gap-3 p-3">
 				{!hideTitle && (
 					<div className="flex min-w-0 items-center gap-2">
 						<span className="text-xs text-muted-foreground">{title}</span>
@@ -188,7 +189,7 @@ function ContextWindow({ parts, limit, title = "上下文", hideTitle, model, th
 						);
 					})}
 				</div>
-			</div>
+			</TrayCard>
 			<div role="status" className="px-1.5 pb-0.5 text-xs text-muted-foreground">
 				{busy ? (
 					<Shimmer>正在压缩{target ? target.label : ""}…</Shimmer>
@@ -198,15 +199,15 @@ function ContextWindow({ parts, limit, title = "上下文", hideTitle, model, th
 					`剩余 ${tokens(Math.max(0, limit - total))}${threshold ? `，到 ${Math.round(threshold * 1000) / 10}% 时自动压缩` : ""}`
 				)}
 			</div>
-		</div>
+		</Tray>
 	);
 }
 
 /** Loading: the card's shape – head, big number, the field, five rows, the tray – so nothing jumps when the numbers land */
 function Loading({ title, hideTitle, className }: { title: string; hideTitle?: boolean; className?: string }) {
 	return (
-		<div role="group" aria-label={title} aria-busy="true" data-slot="context-window" className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}>
-			<div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-xs">
+		<Tray role="group" aria-label={title} aria-busy="true" data-slot="context-window" className={className}>
+			<TrayCard className="flex flex-col gap-3 p-3">
 				{!hideTitle && <span className="text-xs text-muted-foreground">{title}</span>}
 				<div className="flex items-center gap-2">
 					<Skeleton className="h-7 w-24" />
@@ -222,11 +223,11 @@ function Loading({ title, hideTitle, className }: { title: string; hideTitle?: b
 						</div>
 					))}
 				</div>
-			</div>
+			</TrayCard>
 			<div className="px-1.5 pb-0.5">
 				<Skeleton className="h-3 w-40" />
 			</div>
-		</div>
+		</Tray>
 	);
 }
 

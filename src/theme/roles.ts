@@ -37,6 +37,8 @@ const SURFACE: Record<Mode, { sidebar: number; background: number; card: number;
 };
 /** Translucent layers – black in light mode, white in dark – so they show on any surface. muted and secondary inset, accent hovers */
 const OVERLAY: Record<Mode, { muted: number; accent: number }> = { light: { muted: 0.039, accent: 0.051 }, dark: { muted: 0.051, accent: 0.071 } };
+/** Shadows – black at these opacities. Dark surfaces need far more for a shadow to show at all. rest – under a card resting in a tray; near and far – the tight and the wide part of a floating shadow */
+const SHADE: Record<Mode, { rest: number; near: number; far: number }> = { light: { rest: 0.05, near: 0.06, far: 0.16 }, dark: { rest: 0.3, near: 0.3, far: 0.55 } };
 /** subtle – a signal's tint for diff lines and badge fills: the solid shade at this opacity */
 const SUBTLE: Record<Mode, number> = { light: 0.12, dark: 0.18 };
 /** Where muted text starts; contrast moves it darker or lighter if needed */
@@ -107,6 +109,9 @@ export function roles(theme: ThemeInput): Role[] {
 		{ name: "sidebar-border", doc: "Dividers in the sidebar", value: by((m) => line(m, s(m).sidebarBorder, LINE.divider[m], [n(m, s(m).sidebar)])), needs: [LINE.divider, ["sidebar"]] },
 		{ name: "ring", doc: "Focus ring", value: by((m) => n(m, s(m).ring)) },
 		{ name: "sidebar-ring", doc: "Focus ring in the sidebar", value: by((m) => n(m, s(m).ring)) },
+		{ name: "shade-rest", doc: "Shadow under what rests on a surface – a card in a tray", value: by((m) => gray(theme.neutral[m], 0, SHADE[m].rest)) },
+		{ name: "shade-near", doc: "The tight part of a floating shadow", value: by((m) => gray(theme.neutral[m], 0, SHADE[m].near)) },
+		{ name: "shade-far", doc: "The soft, wide part of a floating shadow", value: by((m) => gray(theme.neutral[m], 0, SHADE[m].far)) },
 	];
 
 	for (const sig of SIGNALS) {

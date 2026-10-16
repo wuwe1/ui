@@ -26,6 +26,7 @@ import {
 	optionOf,
 	proposalOf,
 } from "../lib/decision-inbox.ts";
+import { Tray, TrayCard, TrayLabel } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { DecisionAnswer, DecisionOption } from "../lib/decision-inbox.ts";
@@ -87,9 +88,9 @@ function More({ children }: { children: ReactNode }) {
 
 function Loading({ label, className }: { label?: ReactNode; className?: string }) {
 	return (
-		<div aria-busy="true" data-slot="decision-inbox" className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}>
-			{label && <div className="truncate px-2 pt-0.5 text-2xs text-muted-foreground">{label}</div>}
-			<div className="flex flex-col gap-3 rounded-xl border bg-card p-3 shadow-xs">
+		<Tray aria-busy="true" data-slot="decision-inbox" className={className}>
+			{label && <TrayLabel>{label}</TrayLabel>}
+			<TrayCard className="flex flex-col gap-3 p-3">
 				<Skeleton className="h-5 w-16" />
 				<div className="flex flex-col gap-2 rounded-lg bg-muted/60 p-3">
 					<Skeleton className="h-4 w-2/3" />
@@ -102,8 +103,8 @@ function Loading({ label, className }: { label?: ReactNode; className?: string }
 				{[56, 72, 48].map((w) => (
 					<Skeleton key={w} className="mx-3 h-3.5" style={{ width: `${w}%` }} />
 				))}
-			</div>
-		</div>
+			</TrayCard>
+		</Tray>
 	);
 }
 
@@ -482,7 +483,7 @@ function DecisionInbox({ decisions, label, answers: given, onDecide, onDone, emp
 	);
 
 	return (
-		<div
+		<Tray
 			ref={root}
 			role="group"
 			aria-label={typeof label === "string" ? label : "待定事项"}
@@ -490,10 +491,10 @@ function DecisionInbox({ decisions, label, answers: given, onDecide, onDone, emp
 			tabIndex={-1}
 			onKeyDown={onKey}
 			onPointerDown={() => (touched.current = true)}
-			className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5 outline-none", className)}
+			className={cn("outline-none", className)}
 		>
-			{label && <div className="truncate px-2 pt-0.5 text-2xs text-muted-foreground">{label}</div>}
-			<div className="flex flex-col rounded-xl border bg-card text-card-foreground shadow-xs">
+			{label && <TrayLabel>{label}</TrayLabel>}
+			<TrayCard className="flex flex-col">
 				{!empty && <div className="flex h-12 items-center gap-2 border-b pr-1.5 pl-3 md:h-11">{head}</div>}
 				<div className="flex flex-col py-1.5">
 					{empty && (
@@ -517,11 +518,11 @@ function DecisionInbox({ decisions, label, answers: given, onDecide, onDone, emp
 							<div className="px-1.5">{decided.map(line)}</div>
 						))}
 				</div>
-			</div>
+			</TrayCard>
 			<div role="status" aria-live="polite" className="sr-only">
 				{said}
 			</div>
-		</div>
+		</Tray>
 	);
 }
 

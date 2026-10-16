@@ -57,7 +57,7 @@ function Switch({ on, onChange, label, disabled }: { on: boolean; onChange: (on:
 		>
 			<span className="max-[320px]:sr-only">{label}</span>
 			<span className={cn("relative h-5 w-9 shrink-0 rounded-full transition-colors duration-150", on ? "bg-primary" : "bg-field")}>
-				<span className={cn("absolute top-0.5 left-0.5 size-4 rounded-full bg-background shadow-sm transition-transform duration-150 ease-out-strong motion-reduce:transition-none", on && "translate-x-4")} />
+				<span className={cn("absolute top-0.5 left-0.5 size-4 rounded-full bg-background shadow-rest transition-transform duration-150 ease-out-strong motion-reduce:transition-none", on && "translate-x-4")} />
 			</span>
 		</button>
 	);

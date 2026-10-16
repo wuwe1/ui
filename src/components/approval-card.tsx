@@ -10,6 +10,7 @@ import { Kbd } from "./kbd.tsx";
 import { Chevron } from "./placeholder.tsx";
 import { Spinner } from "./spinner.tsx";
 import { type ApprovalStatus, left, OUTCOME } from "../lib/approval.ts";
+import { Tray, TrayCard, TrayLabel } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { ApprovalStatus } from "../lib/approval.ts";
@@ -174,9 +175,9 @@ function ApprovalCard({
 			{/* Answered: the card folds away under the one-line outcome */}
 			<div className={cn("grid transition-[grid-template-rows,opacity] duration-200 ease-out-strong motion-reduce:transition-none", done ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr]")} inert={done || undefined}>
 				<div className="min-h-0 overflow-hidden">
-					<div className="flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5">
-						{label && <div className="truncate px-2 pt-0.5 text-2xs text-muted-foreground">{label}</div>}
-						<div className="flex flex-col gap-3 rounded-xl border bg-card p-3 text-card-foreground shadow-xs">
+					<Tray>
+						{label && <TrayLabel>{label}</TrayLabel>}
+						<TrayCard className="flex flex-col gap-3 p-3">
 							<div className="flex items-start gap-3">
 								<span className="flex size-8 shrink-0 items-center justify-center rounded-lg border bg-background">
 									<I className="size-4 text-waiting-strong" aria-hidden />
@@ -225,7 +226,7 @@ function ApprovalCard({
 									{always}
 								</label>
 							)}
-						</div>
+						</TrayCard>
 						{why !== null && (
 							<Input
 								autoFocus
@@ -281,7 +282,7 @@ function ApprovalCard({
 								)}
 							</div>
 						</div>
-					</div>
+					</Tray>
 				</div>
 			</div>
 			{done && (

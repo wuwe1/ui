@@ -35,7 +35,7 @@ export function Drawer({ d, open, onOpenChange, label, onHidden, onStart, clear,
 	return createPortal(
 		<>
 			<div ref={ov} aria-hidden className={cn("fixed inset-0 z-50 bg-black/10", !clear && "supports-backdrop-filter:backdrop-blur-xs")} onClick={() => change.current(false)} />
-			<div ref={el} role={open ? "dialog" : undefined} aria-modal={open || undefined} aria-label={label} data-drawer={d.side} className={cn("fixed z-50 flex flex-col shadow-lg", className)} {...props}>
+			<div ref={el} role={open ? "dialog" : undefined} aria-modal={open || undefined} aria-label={label} data-drawer={d.side} className={cn("fixed z-50 flex flex-col shadow-float", className)} {...props}>
 				{children}
 			</div>
 		</>,

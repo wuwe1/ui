@@ -8,6 +8,7 @@ import { Shimmer } from "./shimmer.tsx";
 import { Skeleton } from "./skeleton.tsx";
 import { Spinner } from "./spinner.tsx";
 import { describe, type DiffDecision, type DiffSegment, diffWords, resolve, step } from "../lib/inline-diff.ts";
+import { Tray, TrayCard, TrayLabel } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { DiffDecision, DiffSegment } from "../lib/inline-diff.ts";
@@ -348,21 +349,19 @@ function InlineDiff({ original = "", suggested, segments, label, decisions: give
 	);
 
 	return (
-		<div
+		<Tray
 			role="group"
 			aria-labelledby={label ? labelId : undefined}
 			aria-label={label ? undefined : "修改"}
 			aria-busy={writing || undefined}
 			data-slot="inline-diff"
 			onKeyDown={onKey}
-			className={cn("flex min-w-0 flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}
+			className={className}
 		>
 			{label && (
-				<div id={labelId} className="truncate px-2 pt-0.5 text-2xs text-muted-foreground">
-					{label}
-				</div>
+				<TrayLabel id={labelId}>{label}</TrayLabel>
 			)}
-			<div className="@container relative rounded-xl border bg-card text-card-foreground shadow-xs">
+			<TrayCard className="@container relative">
 				{head}
 				<div ref={box} className="relative">
 					{writing && !original ? (
@@ -382,7 +381,7 @@ function InlineDiff({ original = "", suggested, segments, label, decisions: give
 							aria-label="这一处"
 							aria-hidden={!bar}
 							className={cn(
-								"absolute z-30 flex h-8 items-center gap-0.5 rounded-[10px] bg-foreground p-1 text-background shadow-lg pointer-coarse:h-12",
+								"absolute z-30 flex h-8 items-center gap-0.5 rounded-[10px] bg-foreground p-1 text-background shadow-float pointer-coarse:h-12",
 								"transition-[left,top] duration-200 ease-out-strong animate-in fade-in motion-reduce:animate-none motion-reduce:transition-none",
 								bar ? "visible" : "invisible",
 							)}
@@ -394,11 +393,11 @@ function InlineDiff({ original = "", suggested, segments, label, decisions: give
 						</div>
 					)}
 				</div>
-			</div>
+			</TrayCard>
 			<div role="status" aria-live="polite" className="sr-only">
 				{said}
 			</div>
-		</div>
+		</Tray>
 	);
 }
 

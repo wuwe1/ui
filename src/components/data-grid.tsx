@@ -681,7 +681,7 @@ function DataGrid({ label, columns, rows, group, defaultCollapsed, rowHeight, se
 	);
 
 	// isolate: the header row and the first column stack inside the card, never over what the host lays on top of it
-	const card = cn("isolate flex max-h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs", TINTS, className);
+	const card = cn("isolate flex max-h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-card text-card-foreground shadow-rest", TINTS, className);
 
 	if (rows === null)
 		return (
@@ -828,7 +828,7 @@ function DataGrid({ label, columns, rows, group, defaultCollapsed, rowHeight, se
 													onMouseDown={(e) => e.preventDefault()}
 													onClick={() => onOpen(r.id)}
 													className={cn(
-														"absolute top-1/2 right-1.5 flex h-6 -translate-y-1/2 items-center rounded-md border bg-card px-2 text-2xs font-medium text-muted-foreground shadow-xs outline-none hover:bg-(--grid-hover) hover:text-foreground",
+														"absolute top-1/2 right-1.5 flex h-6 -translate-y-1/2 items-center rounded-md border bg-card px-2 text-2xs font-medium text-muted-foreground shadow-rest outline-none hover:bg-(--grid-hover) hover:text-foreground",
 														// The words under it fade out rather than end at its edge
 														"before:pointer-events-none before:absolute before:inset-y-0 before:right-full before:w-6 before:bg-linear-to-l before:from-(--cell-bg) before:to-transparent",
 														"opacity-0 group-hover/row:opacity-100",

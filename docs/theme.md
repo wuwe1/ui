@@ -28,6 +28,19 @@ Components use only the last layer: `bg-background`, `text-muted-foreground`, `t
 - Signals – three shades: solid for dots and icons, `-strong` for text, `-subtle` for tints
 - Wide gamut – colors inside P3 ship as they are; only colors beyond P3 are pulled in
 
+## Elevation
+
+Two shadows, nothing else – `test/elevation.test.ts` fails on Tailwind's scale.
+
+| Shadow | Under | Value |
+|---|---|---|
+| `shadow-rest` | What rests on a surface: a card in a tray, a pill on a track, a switch's knob | 0 1px 2px `shade-rest` |
+| `shadow-float` | What floats over the page: menus, popovers, toasts, sheets, a floating tray | 0 4px 12px −4px `shade-near`, 0 18px 40px −12px `shade-far` |
+
+- The shade tokens are black: 5%, 6% and 16% in light; 30%, 30% and 55% in dark, where a lighter shadow wouldn't show
+- The wide part spreads negative – it sinks under the edge instead of spilling sideways
+- A float pairs with a hairline ring, `ring-1 ring-foreground/10`, so its edge holds on any ground
+
 ## Change a theme
 
 1. Drag the knobs on the showcase's Theme page; watch both previews and the contrast column

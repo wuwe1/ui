@@ -30,6 +30,9 @@
 	--sidebar-border: light-dark(oklch(0.9219 0 0), oklch(0.4019 0.003 286));
 	--ring: light-dark(oklch(0.708 0 0), oklch(0.556 0.003 286));
 	--sidebar-ring: light-dark(oklch(0.708 0 0), oklch(0.556 0.003 286));
+	--shade-rest: light-dark(oklch(0 0 0 / 0.05), oklch(0 0 0 / 0.3));
+	--shade-near: light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.3));
+	--shade-far: light-dark(oklch(0 0 0 / 0.16), oklch(0 0 0 / 0.55));
 	--waiting: light-dark(oklch(0.769 0.188 70.08), oklch(0.769 0.188 70.08));
 	--waiting-strong: light-dark(oklch(0.5471 0.136 70.08), oklch(0.769 0.188 70.08));
 	--waiting-subtle: light-dark(oklch(0.769 0.188 70.08 / 0.12), oklch(0.769 0.188 70.08 / 0.18));
@@ -91,6 +94,9 @@
 	--sidebar-border: light-dark(oklch(0.9219 0.008 75), oklch(0.4019 0.006 60));
 	--ring: light-dark(oklch(0.708 0.008 75), oklch(0.556 0.006 60));
 	--sidebar-ring: light-dark(oklch(0.708 0.008 75), oklch(0.556 0.006 60));
+	--shade-rest: light-dark(oklch(0 0 0 / 0.05), oklch(0 0 0 / 0.3));
+	--shade-near: light-dark(oklch(0 0 0 / 0.06), oklch(0 0 0 / 0.3));
+	--shade-far: light-dark(oklch(0 0 0 / 0.16), oklch(0 0 0 / 0.55));
 	--waiting: light-dark(oklch(0.769 0.188 70.08), oklch(0.769 0.188 70.08));
 	--waiting-strong: light-dark(oklch(0.5463 0.1358 70.08), oklch(0.769 0.188 70.08));
 	--waiting-subtle: light-dark(oklch(0.769 0.188 70.08 / 0.12), oklch(0.769 0.188 70.08 / 0.18));

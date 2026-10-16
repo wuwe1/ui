@@ -133,7 +133,7 @@ function SegmentedControl({ options, value, defaultValue, onChange, size = "md",
 					<span
 						key={fadeKey}
 						aria-hidden
-						className={cn("pointer-events-none absolute inset-y-0.5 rounded-md bg-raised shadow-xs ring-1 ring-foreground/5", fadeKey > 0 && "animate-in fade-in-0 duration-150")}
+						className={cn("pointer-events-none absolute inset-y-0.5 rounded-md bg-raised shadow-rest ring-1 ring-foreground/5", fadeKey > 0 && "animate-in fade-in-0 duration-150")}
 						style={{ left: box.left, right: box.right, scale: pressed && !reduced() ? "0.97" : undefined, transition: [gliding && edges, `scale 150ms ${EASE}`].filter(Boolean).join(", ") }}
 					/>
 				)}

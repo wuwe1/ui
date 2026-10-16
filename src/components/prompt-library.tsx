@@ -10,6 +10,7 @@ import { Skeleton } from "./skeleton.tsx";
 import { Spinner } from "./spinner.tsx";
 import { Textarea } from "./textarea.tsx";
 import { blanks, fill, groupsOf, matches, missing, nextEmpty, parts, type PromptTemplate, sections, tidy, valuesOf } from "../lib/prompt-library.ts";
+import { Tray, TrayCard } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { PromptTemplate, PromptVariable } from "../lib/prompt-library.ts";
@@ -573,7 +574,7 @@ function PromptLibrary({ templates, value, defaultValue, onSelect, onUse, onCopy
 	let body: ReactNode;
 	if (!templates)
 		body = (
-			<div aria-busy="true" className={cn("flex overflow-hidden rounded-xl border bg-card shadow-xs", !narrow && "h-80")}>
+			<TrayCard aria-busy="true" className={cn("flex overflow-hidden", !narrow && "h-80")}>
 				<div className={cn("flex flex-col gap-2.5 p-3", narrow ? "w-full" : "w-52 shrink-0 border-r")}>
 					<Skeleton className="h-4 w-16" />
 					<Skeleton className="mb-1 h-8 w-full" />
@@ -589,12 +590,12 @@ function PromptLibrary({ templates, value, defaultValue, onSelect, onUse, onCopy
 						))}
 					</div>
 				)}
-			</div>
+			</TrayCard>
 		);
 	else if (!list.length && !draft)
 		body = (
 			<>
-				<div className="rounded-xl border bg-card shadow-xs">
+				<TrayCard>
 					<Placeholder title={`暂无${title}`} text={emptyNote} className="py-10">
 						{onSave && (
 							<Button size="sm" variant="outline" className="pointer-coarse:h-10" onClick={create}>
@@ -603,28 +604,28 @@ function PromptLibrary({ templates, value, defaultValue, onSelect, onUse, onCopy
 							</Button>
 						)}
 					</Placeholder>
-				</div>
+				</TrayCard>
 				{tray}
 			</>
 		);
 	else
 		body = (
 			<>
-				<div className={cn("flex overflow-hidden rounded-xl border bg-card text-card-foreground shadow-xs", !narrow && (draft ? "min-h-80" : "h-80"))}>
+				<TrayCard className={cn("flex overflow-hidden", !narrow && (draft ? "min-h-80" : "h-80"))}>
 					{showList && listPane}
 					{showTemplate && templatePane}
-				</div>
+				</TrayCard>
 				{tray}
 			</>
 		);
 
 	return (
-		<div ref={root} role="group" aria-label={title} data-slot="prompt-library" className={cn("flex min-w-0 flex-col rounded-2xl bg-muted p-1", className)}>
+		<Tray ref={root} role="group" aria-label={title} data-slot="prompt-library" className={className}>
 			{body}
 			<div role="status" aria-live="polite" className="sr-only">
 				{said}
 			</div>
-		</div>
+		</Tray>
 	);
 }
 

@@ -30,6 +30,7 @@ import {
 	settled,
 	step,
 } from "../lib/match-review.ts";
+import { Tray, TrayCard, TrayLabel } from "./tray.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type { MatchCandidate, MatchDecision, MatchItem, MatchLink, MatchPair, MatchSignal } from "../lib/match-review.ts";
@@ -119,9 +120,9 @@ function Tool({ icon, label, k, onClick }: { icon?: ReactNode; label: string; k:
 
 function Loading({ label, className }: { label?: ReactNode; className?: string }) {
 	return (
-		<div aria-busy="true" data-slot="match-review" className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}>
-			{label && <div className="truncate px-2 pt-0.5 text-2xs text-muted-foreground">{label}</div>}
-			<div className="@container flex flex-col gap-1 rounded-xl border bg-card p-3 shadow-xs" style={{ "--tail": tailOf(0) } as CSSProperties}>
+		<Tray aria-busy="true" data-slot="match-review" className={className}>
+			{label && <TrayLabel>{label}</TrayLabel>}
+			<TrayCard className="@container flex flex-col gap-1 p-3" style={{ "--tail": tailOf(0) } as CSSProperties}>
 				<Skeleton className="mb-2 h-5 w-24" />
 				{[64, 48, 56].map((w) => (
 					<div key={w} className={cn(GRID, "items-center gap-y-2 py-2")}>
@@ -130,8 +131,8 @@ function Loading({ label, className }: { label?: ReactNode; className?: string }
 						<span className={T} />
 					</div>
 				))}
-			</div>
-		</div>
+			</TrayCard>
+		</Tray>
 	);
 }
 
@@ -410,9 +411,9 @@ function MatchReview({ pairs, signals = [], columns, label, decisions: given, on
 	const resolved = !open.length;
 	const empty = !list.length;
 	return (
-		<div role="group" aria-label={typeof label === "string" ? label : "对照"} data-slot="match-review" onKeyDown={onKey} className={cn("flex flex-col gap-1.5 rounded-2xl bg-muted p-1.5", className)}>
-			{label && <div className="truncate px-2 pt-0.5 text-2xs text-muted-foreground">{label}</div>}
-			<div className="@container relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-xs" style={{ "--tail": tailOf(signals.length) } as CSSProperties}>
+		<Tray role="group" aria-label={typeof label === "string" ? label : "对照"} data-slot="match-review" onKeyDown={onKey} className={className}>
+			{label && <TrayLabel>{label}</TrayLabel>}
+			<TrayCard className="@container relative flex flex-col" style={{ "--tail": tailOf(signals.length) } as CSSProperties}>
 				<div className={cn("flex h-11 items-center gap-2 border-b px-3", empty && "hidden")}>
 					{readOnly ? (
 						<>
@@ -470,7 +471,7 @@ function MatchReview({ pairs, signals = [], columns, label, decisions: given, on
 
 					{focused && barTop !== null && (
 						<div className="pointer-events-none absolute top-0 right-3 z-10 transition-transform duration-200 ease-out-strong motion-reduce:transition-none" style={{ transform: `translateY(${barTop - 34}px)` }}>
-							<div role="toolbar" aria-label="这一处" className="pointer-events-auto flex h-8 items-center gap-0.5 rounded-[10px] bg-foreground p-1 text-background shadow-lg">
+							<div role="toolbar" aria-label="这一处" className="pointer-events-auto flex h-8 items-center gap-0.5 rounded-[10px] bg-foreground p-1 text-background shadow-float">
 								{fg ? (
 									<>
 										<Tool icon={<Check className="size-3.5" />} label="留这个" k="Y" onClick={() => give(fg, fg.pairs[member]!)} />
@@ -537,11 +538,11 @@ function MatchReview({ pairs, signals = [], columns, label, decisions: given, on
 						</div>
 					)}
 				</div>
-			</div>
+			</TrayCard>
 			<div role="status" aria-live="polite" className="sr-only">
 				{said}
 			</div>
-		</div>
+		</Tray>
 	);
 }
 

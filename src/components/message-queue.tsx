@@ -19,7 +19,7 @@ const INSET = 6;
 const LEAVE_MS = 200;
 /** On a phone the button grows to 32px and its hit area to 44px */
 const HIT = "relative pointer-coarse:size-8 pointer-coarse:after:absolute pointer-coarse:after:-inset-1.5 pointer-coarse:after:content-['']";
-const CARD = "flex min-w-0 gap-1 rounded-lg border bg-card py-0.5 pr-0.5 pl-2.5 text-md text-card-foreground shadow-xs";
+const CARD = "flex min-w-0 gap-1 rounded-lg border bg-card py-0.5 pr-0.5 pl-2.5 text-md text-card-foreground shadow-rest";
 const TEXT = "rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50";
 const MOVE = "transition-[translate,opacity,margin] duration-200 ease-out-strong motion-reduce:transition-opacity";
 const ENTER = "animate-in fade-in-0 motion-safe:slide-in-from-bottom-2 duration-200 ease-out-strong";

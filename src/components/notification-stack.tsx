@@ -51,7 +51,7 @@ function NotificationStack({ notices, onDismiss, label = "通知", className }: 
 						inert={!front}
 						aria-hidden={!front}
 						className={cn(
-							"col-start-1 row-start-1 self-start overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-sm",
+							"col-start-1 row-start-1 self-start overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-float",
 							"transition-[transform,opacity,margin] ease-out-strong motion-reduce:transition-none",
 							gone ? "duration-150 ease-in-strong" : "duration-200",
 						)}
