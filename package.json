@@ -21,6 +21,7 @@
 		"./theme.css": "./src/theme/theme.css",
 		"./tokens.css": "./src/theme/tokens.css",
 		"./variants.css": "./src/theme/variants.css",
+		"./base.css": "./src/theme/base.css",
 		"./theme": "./src/theme/index.ts",
 		"./lib/*": "./src/lib/*.ts",
 		"./hooks/*": "./src/hooks/*.ts",

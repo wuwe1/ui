@@ -6,5 +6,6 @@ import { defineConfig } from "vite";
 export default defineConfig({
 	root: "showcase",
 	plugins: [react(), tailwindcss()],
-	build: { outDir: "../dist", emptyOutDir: true },
+	// light-dark() stays native: lower targets make Lightning CSS pin it to :root, and subtree modes stop working
+	build: { outDir: "../dist", emptyOutDir: true, cssTarget: ["safari17.5", "chrome123", "firefox120", "edge123"] },
 });

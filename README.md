@@ -27,7 +27,15 @@ import { applyMode } from "@wuwe1/ui/theme";
 applyMode("system");
 ```
 
-A linked package brings its own `node_modules` – dedupe React and friends with Vite's `resolve.dedupe`, as mixer's `vite.config.ts` does.
+In `vite.config.ts`:
+
+```ts
+build: { cssTarget: ["safari17.5", "chrome123", "firefox120", "edge123"] },
+resolve: { dedupe: ["react", "react-dom", "radix-ui", "lucide-react", "cmdk", "cn", "class-variance-authority"] },
+```
+
+- `cssTarget` – keeps `light-dark()` native, so modes work on any block (`docs/theme.md`)
+- `dedupe` – a linked package brings its own `node_modules`; React and friends must be one copy
 
 ## Develop
 

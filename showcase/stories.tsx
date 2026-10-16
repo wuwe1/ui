@@ -1,6 +1,6 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { Bell, CircleAlert, Inbox, Plus, Search, SquarePen, Trash2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { Bell, CircleAlert, FileText, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Trash2 } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
@@ -14,6 +14,8 @@ import { Skeleton } from "../src/components/skeleton.tsx";
 import { Spinner } from "../src/components/spinner.tsx";
 import { type Mark, StatusIcon, statusLabel } from "../src/components/status-icon.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../src/components/tabs.tsx";
+import { ThinkingLoader } from "../src/components/thinking-loader.tsx";
+import { ToolCall, ToolCallGroup, type ToolCallItem } from "../src/components/tool-call.tsx";
 import { Textarea } from "../src/components/textarea.tsx";
 import { toast } from "../src/components/toast.tsx";
 import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
@@ -133,6 +135,27 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "In a button", render: () => <div className={row}><Button variant="outline" size="sm" disabled><Spinner />删除</Button><Button size="icon" variant="outline" disabled aria-label="停止中"><Spinner /></Button></div> },
 		{ name: "In a chip", render: () => <span className="flex w-fit items-center gap-1.5 rounded-md border py-0.5 pr-2 pl-2 text-xs"><Spinner />screenshot.png</span> },
 	],
+	ThinkingLoader: [
+		{ name: "Waiting", render: () => <ThinkingLoader since={Date.now() - 12_000} /> },
+		{ name: "Phase change", render: () => <Phases /> },
+		{ name: "Pill", render: () => <ThinkingLoader variant="pill" label="正在搜索网页…" since={Date.now() - 3_000} /> },
+		{ name: "Done", render: () => <div className={col}><ThinkingLoader done since={Date.now() - 4_200} /><ThinkingLoader variant="pill" done since={Date.now() - 12_400} /></div> },
+	],
+	ToolCall: [
+		{ name: "Running", render: () => <ToolCall call={{ ...BASH, status: "running", since: Date.now() - 8_000 }} /> },
+		{ name: "Done", render: () => <ToolCall call={READ} /> },
+		{ name: "Open", render: () => <ToolCall call={GREP} args={GREP_ARGS} result={GREP_RESULT} defaultOpen /> },
+		{ name: "Failed", render: () => <ToolCall call={FETCH} args={FETCH_ARGS} error="请求超时：8 秒内 hubspot.com 没有响应" onRetry={() => {}} defaultOpen /> },
+		{ name: "Loading", render: () => <ToolCall call={READ} args={null} result={null} defaultOpen /> },
+		{ name: "Long", render: () => <ToolCall call={{ ...READ, summary: "web/src/components/conversation/very-long-file-name-that-does-not-fit.tsx" }} /> },
+	],
+	ToolCallGroup: [
+		{ name: "Running", render: () => <ToolCallGroup calls={[READ, GREP, { ...BASH, status: "running", since: Date.now() - 8_000 }]} /> },
+		{ name: "Done, folded", render: () => <ToolCallGroup calls={[READ, GREP, EDIT]} ms={2_700} /> },
+		{ name: "Done, open", render: () => <ToolCallGroup calls={[READ, GREP, EDIT]} ms={2_700} defaultOpen /> },
+		{ name: "Some failed", render: () => <ToolCallGroup calls={[READ, FETCH, EDIT]} ms={9_400} /> },
+		{ name: "One failed call", render: () => <ToolCallGroup calls={[FETCH]} ms={8_000} /> },
+	],
 	Feedback: [
 		{ name: "Kbd", render: () => <div className={row}><Kbd>⌘</Kbd><Kbd>↵</Kbd><Kbd>Esc</Kbd></div> },
 		{ name: "toast", render: () => <div className={row}><Button variant="outline" size="sm" onClick={() => toast("已复制到剪贴板")}>提示</Button><Button variant="outline" size="sm" onClick={() => toast.error("出错：网络连接已断开")}>出错</Button></div> },
@@ -146,6 +169,27 @@ function Step({ running, summary }: { running?: boolean; summary: string }) {
 			<span className="shrink-0 font-medium">Bash</span>
 			<Shimmer active={running} className="truncate font-mono text-xs text-muted-foreground">{summary}</Shimmer>
 			<span className="ml-auto shrink-0 pl-2 text-2xs text-muted-foreground tabular-nums">{running ? "0:08" : "1.2s"}</span>
+		</div>
+	);
+}
+
+const BASH: ToolCallItem = { id: "1", name: "Bash", summary: "pnpm test", icon: SquareTerminal, status: "done", ms: 4_100 };
+const READ: ToolCallItem = { id: "2", name: "Read", summary: "web/src/app.tsx", icon: FileText, status: "done", ms: 120 };
+const GREP: ToolCallItem = { id: "3", name: "Grep", summary: "StatusIcon", icon: Search, status: "done", ms: 340 };
+const EDIT: ToolCallItem = { id: "4", name: "Edit", summary: "web/src/app.tsx", icon: Pencil, status: "done", ms: 90 };
+const FETCH: ToolCallItem = { id: "5", name: "WebFetch", summary: "hubspot.com/pricing", icon: Globe, status: "failed", ms: 8_000 };
+const GREP_ARGS = JSON.stringify({ pattern: "StatusIcon", path: "web/src", output_mode: "files_with_matches" }, null, 2);
+const GREP_RESULT = "web/src/app.tsx\nweb/src/components/side.tsx\nweb/src/components/inbox.tsx";
+const FETCH_ARGS = JSON.stringify({ url: "https://www.hubspot.com/pricing/sales", prompt: "列出各档价格" }, null, 2);
+
+/** The label changes: the old one rolls out, the new one rolls in */
+function Phases() {
+	const LABELS = ["正在等待回复…", "正在压缩上下文…", "正在读取 12 个文件…"];
+	const [i, setI] = useState(0);
+	return (
+		<div className={col}>
+			<ThinkingLoader label={LABELS[i]} since={Date.now() - 6_000} />
+			<Button variant="outline" size="sm" className="w-fit" onClick={() => setI((i + 1) % LABELS.length)}>换一句</Button>
 		</div>
 	);
 }

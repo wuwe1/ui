@@ -38,7 +38,10 @@ Components use only the last layer: `bg-background`, `text-muted-foreground`, `t
 - `applyMode("system")` – sets the class on `<html>`, which Tailwind's `dark:` needs
 - `applyTheme(theme, el)` – applies a user-tuned theme
 
-Built on `light-dark()`: Safari 17.5+, Chrome 123+.
+Built on `light-dark()`: Safari 17.5+, Chrome 123+, Firefox 120+.
+
+- Build CSS for those browsers – Vite's `build.cssTarget`. Lower targets make Lightning CSS rewrite `light-dark()` into variables fixed at `:root`, and `.dark` / `.light` on a block stop working
+- `dark:` utilities see `.dark` on any ancestor, so they still apply inside a `.light` block on a dark page. Components lean on tokens, which follow the block
 
 ## Versus before
 
