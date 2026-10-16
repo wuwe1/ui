@@ -1,5 +1,5 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { Bell, CircleAlert, FileText, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Trash2 } from "lucide-react";
+import { Bell, CircleAlert, FileText, GitFork, Globe, Inbox, Pencil, Plus, Search, SquarePen, SquareTerminal, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { Badge } from "../src/components/badge.tsx";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "../src/components/input.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
+import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
 import { Shimmer } from "../src/components/shimmer.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
@@ -156,6 +157,15 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Some failed", render: () => <ToolCallGroup calls={[READ, FETCH, EDIT]} ms={9_400} /> },
 		{ name: "One failed call", render: () => <ToolCallGroup calls={[FETCH]} ms={8_000} /> },
 	],
+	MessageActions: [
+		{ name: "Quiet", render: () => <Reply time /> },
+		{ name: "Lit", render: () => <Reply time quiet={false} /> },
+		{ name: "Your message", render: () => <Mine /> },
+		{ name: "Turn", render: () => <Reply stats={<TurnStats ms={218_000} tools={12} files={FILES.slice(0, 3)} onFile={() => {}} agents={AGENTS} onAgent={() => {}} model="Opus 5.5" />} /> },
+		{ name: "A few facts", render: () => <Reply stats={<TurnStats ms={4_200} tools={2} model="Opus 5.5" />} /> },
+		{ name: "Failed calls", render: () => <Reply stats={<TurnStats ms={96_000} tools={9} failed={2} files={FILES.slice(0, 1)} model="Sonnet 5.5" />} /> },
+		{ name: "Long", render: () => <Reply stats={<TurnStats ms={4_212_000} tools={148} failed={3} files={FILES} onFile={() => {}} agents={[...AGENTS, { id: "a3", label: "检查 iOS Safari 上的滚动" }, { id: "a4", label: "对比 affectUI 的 Agent Run 页面" }]} onAgent={() => {}} model="Opus 5.5" />} /> },
+	],
 	Feedback: [
 		{ name: "Kbd", render: () => <div className={row}><Kbd>⌘</Kbd><Kbd>↵</Kbd><Kbd>Esc</Kbd></div> },
 		{ name: "toast", render: () => <div className={row}><Button variant="outline" size="sm" onClick={() => toast("已复制到剪贴板")}>提示</Button><Button variant="outline" size="sm" onClick={() => toast.error("出错：网络连接已断开")}>出错</Button></div> },
@@ -169,6 +179,54 @@ function Step({ running, summary }: { running?: boolean; summary: string }) {
 			<span className="shrink-0 font-medium">Bash</span>
 			<Shimmer active={running} className="truncate font-mono text-xs text-muted-foreground">{summary}</Shimmer>
 			<span className="ml-auto shrink-0 pl-2 text-2xs text-muted-foreground tabular-nums">{running ? "0:08" : "1.2s"}</span>
+		</div>
+	);
+}
+
+const FILES: TurnFile[] = [
+	{ path: "web/src/lib/thread.ts", added: 31, removed: 9 },
+	{ path: "test/thread.test.ts", added: 14, removed: 0 },
+	{ path: "docs/product.md", added: 3, removed: 3 },
+	{ path: "web/src/components/conversation.tsx", added: 52, removed: 40 },
+	{ path: "server/sessions.ts", added: 18, removed: 2 },
+	{ path: "shared/api.ts", added: 1, removed: 0 },
+	{ path: "web/src/components/message.tsx", added: 77, removed: 61 },
+];
+const AGENTS = [{ id: "a1", label: "找出切会话丢消息的原因" }, { id: "a2", label: "写一条复现的测试" }];
+
+/** A reply as a host lays it out: the message wraps the text and the row, so hovering or tapping it lights the quiet part */
+function Reply({ time, quiet, stats }: { time?: boolean; quiet?: boolean; stats?: ReactNode }) {
+	const text = "修好了：增量里删掉的节点没从旧列表里去掉，切回会话时拿到的是旧的那份。加了两条测试，全部通过。";
+	return (
+		<div data-message tabIndex={-1} className="flex flex-col gap-1 text-sm outline-none">
+			<p>{text}</p>
+			<MessageActions className={stats ? undefined : "-ml-1"}>
+				{stats}
+				<MessageActionsQuiet quiet={quiet}>
+					<CopyAction text={text} />
+					<MessageMenu items={[{ icon: GitFork, label: "从这里分叉", onSelect: () => {} }]} />
+					{time && <span className="px-1">5 分钟前</span>}
+				</MessageActionsQuiet>
+				{stats && <span className="ml-auto">5 分钟前</span>}
+			</MessageActions>
+		</div>
+	);
+}
+
+/** Your own message: the bubble, the row right-aligned, a badge that stays */
+function Mine() {
+	const text = "切会话时偶尔丢消息，查一下";
+	return (
+		<div data-message tabIndex={-1} className="flex flex-col items-end gap-1.5 text-sm outline-none">
+			<div className="max-w-[88%] rounded-2xl rounded-br-md bg-secondary px-4 py-2.5">{text}</div>
+			<MessageActions align="end" className="-mr-1">
+				<MessageActionsQuiet>
+					<span className="px-1">5 分钟前</span>
+					<CopyAction text={text} />
+					<MessageMenu items={[{ icon: Pencil, label: "编辑并分叉", onSelect: () => {} }]} />
+				</MessageActionsQuiet>
+				<Badge variant="outline" className="h-4 px-1.5 text-2xs">中途插入</Badge>
+			</MessageActions>
 		</div>
 	);
 }

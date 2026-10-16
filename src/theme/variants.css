@@ -136,3 +136,26 @@
     background-position: 0 0;
   }
 }
+
+/*
+ * MessageActions' quiet part: shown while its message – the nearest [data-message] – is hovered or holds focus. It fades, never moves.
+ * Touch has no hover: hidden there, and out of the tab order, until a tap focuses the message
+ */
+[data-quiet] {
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out-strong);
+}
+[data-message]:hover [data-quiet],
+[data-message]:focus-within [data-quiet],
+[data-quiet]:hover,
+[data-quiet]:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  [data-quiet] {
+    visibility: hidden;
+  }
+  [data-message]:focus-within [data-quiet] {
+    visibility: visible;
+  }
+}

@@ -1,9 +1,17 @@
 // Popsheet: a small panel from a button – a Popover beside it on desktop, a full-width bottom Sheet on phones. A title line, an optional description
-import type { ComponentProps, ReactNode } from "react";
+import { type ComponentProps, type ReactNode, useSyncExternalStore } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./sheet.tsx";
-import { useSidebar } from "./sidebar.tsx";
 import { cn } from "../lib/utils.ts";
+
+/** Phone width, the sidebar's breakpoint – read on the first render, so it never draws a popover first and swaps. No sidebar needed: works in a block */
+const PHONE = "(max-width: 767px)";
+const subscribe = (f: () => void) => {
+	const m = matchMedia(PHONE);
+	m.addEventListener("change", f);
+	return () => m.removeEventListener("change", f);
+};
+const usePhone = () => useSyncExternalStore(subscribe, () => matchMedia(PHONE).matches, () => false);
 
 /**
  * trigger is the button itself and toggles on its own; preventDefault in its onClick to stop that.
@@ -21,8 +29,7 @@ export function Popsheet({ trigger, title, description, side, align, open, onOpe
 	contentProps?: Omit<ComponentProps<typeof PopoverContent>, "children" | "className" | "side" | "align">;
 	children: ReactNode;
 }) {
-	// The sidebar's check – already settled, so it never draws a popover first and swaps
-	const { isMobile } = useSidebar();
+	const isMobile = usePhone();
 	if (isMobile)
 		return (
 			<Sheet open={open} onOpenChange={onOpenChange}>
