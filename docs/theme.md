@@ -1,58 +1,58 @@
-# 主题
+# Theme
 
-改几个旋钮，整套颜色跟着变。字的对比度有测试守着。主题、深浅色能套在任何一块上。
+Turn a few knobs; every color follows. Tests hold text contrast. Themes and modes apply to any subtree.
 
-## 三层
+## Three layers
 
-旋钮（`themes.ts`）→ token（`roles.ts` 推出来，生成 `tokens.css`）→ Tailwind 名字（`theme.css`）。
+Knobs (`themes.ts`) → tokens (derived in `roles.ts`, generated into `tokens.css`) → Tailwind names (`theme.css`).
 
-组件只用最后一层：`bg-background`、`text-muted-foreground`、`text-waiting-strong`。不写 `amber-500`、`#fff`、`text-[13px]`。
+Components use only the last layer: `bg-background`, `text-muted-foreground`, `text-waiting-strong`. Never `amber-500`, `#fff` or `text-[13px]`.
 
-## 旋钮
+## Knobs
 
-| 旋钮 | 管什么 |
+| Knob | Controls |
 |---|---|
-| `neutral` | 灰的色调，深浅分开给 |
-| `signals` | 七种有固定意思的颜色：`waiting` 要你处理、`unread` 新的或在跑、`success`、`destructive`、`added`、`modified`、`renamed` |
-| `series` | 图表的 8 个系列色，过了色盲检查 |
-| `radius` | 圆角基准 |
+| `neutral` | The gray tint, per mode |
+| `signals` | Seven colors with fixed meanings: `waiting` needs you, `unread` new or running, `success`, `destructive`, `added`, `modified`, `renamed` |
+| `series` | Eight chart colors, checked for color blindness |
+| `radius` | The base corner radius |
 
-## 怎么推
+## How colors are derived
 
-- 面 – 固定几档亮度：`sidebar` < `background` < `card`
-- 字 – 次要的字和 `*-strong` 按对比度求：OKLCH 里只挪亮度，挪到每层面上都有 4.5:1
-- 层 – `muted`、`accent` 是半透明的黑或白，叠在哪层上都看得出
-- 信号色 – 三份：实心画点和图标，`-strong` 当字，`-subtle` 当淡底
-- 广色域 – P3 里的颜色照原样写，只降掉比 P3 还大的
+- Surfaces – fixed lightness steps: `sidebar` < `background` < `card`
+- Text – muted text and every `*-strong` are solved for contrast: only lightness moves in OKLCH, until every surface gives 4.5:1
+- Layers – `muted` and `accent` are translucent black or white, so they show on any surface
+- Signals – three shades: solid for dots and icons, `-strong` for text, `-subtle` for tints
+- Wide gamut – colors inside P3 ship as they are; only colors beyond P3 are pulled in
 
-## 改主题
+## Change a theme
 
-1. 展示页的「主题」页拖旋钮，看深浅两块预览和对比度
-2. 点「复制」，贴进 `themes.ts`
-3. `pnpm gen`，`pnpm test`
+1. Drag the knobs on the showcase's Theme page; watch both previews and the contrast column
+2. Copy, then paste into `themes.ts`
+3. `pnpm gen`, `pnpm test`
 
-## 套主题
+## Apply a theme
 
-- `data-theme="paper"` – 那一块换主题
-- `.dark` / `.light` – 那一块固定深 / 浅；都不写跟着系统，不闪白
-- `applyMode("system")` – 给 `<html>` 加 class，Tailwind 的 `dark:` 才认
-- `applyTheme(theme, el)` – 套用户自己调的主题
+- `data-theme="paper"` – that subtree switches theme
+- `.dark` / `.light` – that subtree pins a mode. Neither – it follows the OS, with no white flash
+- `applyMode("system")` – sets the class on `<html>`, which Tailwind's `dark:` needs
+- `applyTheme(theme, el)` – applies a user-tuned theme
 
-靠 `light-dark()` 实现，需要 Safari 17.5+、Chrome 123+。
+Built on `light-dark()`: Safari 17.5+, Chrome 123+.
 
-## 和以前比
+## Versus before
 
-| | 以前（照 affectUI 手挑） | 现在 |
+| | Before – hand-picked, after affectUI | Now |
 |---|---|---|
-| 色值 | 深浅各一套 hex | 旋钮推出来 |
-| 对比度 | 侧栏灰字 4.3:1，琥珀字 2.1:1 | 测试守着，全部 ≥ 4.5:1 |
-| 信号色当字 | 和点同色 | 单独一份 `-strong` |
-| 套主题 | 只能整页 | 任何一块 |
+| Values | One hex set per mode | Derived from knobs |
+| Contrast | Muted text on the sidebar 4.3:1, amber text 2.1:1 | Held by tests, all ≥ 4.5:1 |
+| Signal as text | The dot's shade | Its own `-strong` |
+| Scope | Whole page | Any subtree |
 
-留下的：四层灰从外到里一层比一层亮；半透明的悬停层；默认黑白灰。
+Kept: four grays brightening inward, translucent hover layers, grayscale by default.
 
-## 待定
+## Open questions
 
-- 输入框的边 – 现在 1.2:1，WCAG 1.4.11 要 3:1
-- 焦点环 – 现在半透明，不到 3:1
-- 密度 – 手机 44px、电脑 32px，要不要做成旋钮
+- Input borders – 1.2:1 today; WCAG 1.4.11 asks 3:1
+- Focus ring – translucent, under 3:1
+- Density – 44px rows on phones, 32px on desktop; a knob or not

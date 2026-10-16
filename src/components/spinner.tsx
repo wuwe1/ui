@@ -1,6 +1,9 @@
 import { cn } from "cn"
 
-/** 加载中：和状态标记同一个样子（一个点、带一圈扩散），颜色跟着文字走；Claude 运行中用 StatusIcon 的蓝点。prefers-reduced-motion 时扩散停成一圈淡的 */
+/**
+ * Busy mark for an icon slot – a button, a chip – where no text can shimmer. A dot with a ripple in the text color, the same shape as StatusIcon.
+ * Next to a line of text, shimmer the text instead. Reduced motion – the ripple stands still as a faint ring
+ */
 function Spinner({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span data-slot="spinner" role="status" aria-label="加载中" className={cn("relative inline-flex size-4 shrink-0 items-center justify-center", className)} {...props}>

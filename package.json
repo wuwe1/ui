@@ -1,7 +1,7 @@
 {
 	"name": "@wuwe1/ui",
 	"version": "0.0.0",
-	"description": "wuwe1 的组件库：主题（design token）、基础组件、AI 产品组件，各项目共享",
+	"description": "Shared components for wuwe1's projects: a theme of derived design tokens, base components, AI product components",
 	"license": "MIT",
 	"private": true,
 	"type": "module",

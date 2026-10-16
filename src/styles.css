@@ -1,6 +1,6 @@
 /*
- * 项目里这样引：@import "tailwindcss"; @import "@wuwe1/ui/styles.css";
- * 包含主题、variant、每页的底，并让 Tailwind 扫库里的组件。
+ * In a project: @import "tailwindcss"; @import "@wuwe1/ui/styles.css";
+ * Brings the theme, variants and page base, and has Tailwind scan the components.
  */
 @import "tw-animate-css";
 @import "./theme/variants.css";

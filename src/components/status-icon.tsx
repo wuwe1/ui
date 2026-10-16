@@ -1,17 +1,17 @@
-// 状态标记（StatusIcon）：全站一套，侧栏、Inbox、顶栏、项目汇总、工具调用都用它。只认状态的名字，不碰 mixer 的数据，以后搬进组件库
+// StatusIcon: the one status mark – sidebar, Inbox, top bar, project summary, tool steps. It takes a status name, never app data
 import { cn } from "../lib/utils.ts";
 
 /**
- * 会话的状态（lib/live.ts 的 Status 是它的一部分），加上 ok / failed：一步工具调用跑完了，成功、失败
+ * A session's status (mixer's Status in lib/live.ts is a subset), plus ok and failed for a finished tool step
  */
 export type Mark = "waiting" | "running" | "background" | "done" | "error" | "terminal" | "ok" | "failed" | null;
 const STATUS_LABEL: Record<Exclude<Mark, null>, string> = { waiting: "待确认", running: "运行中", background: "后台任务运行中", done: "已完成，未读", error: "出错，未读", terminal: "终端中打开", ok: "成功", failed: "失败" };
 
 /**
- * 状态标记，全站一套：点 = 要你注意（琥珀待确认，带一圈扩散；蓝已完成未读；红出错未读）；带扩散的蓝点 = 运行中；
- * 带扩散的蓝色空心圈 = 后台任务在跑（Claude 闲着，跑完了会叫醒它）；灰色空心圈 = 终端中打开。
- * 一步工具调用跑完了：绿点成功、红点失败。
- * 颜色只有这几种意思：琥珀要你确认，红出错，蓝没看过，绿这一步成功了，灰中性
+ * Solid dot – look at this: amber waiting (with a ripple), blue done and unread, red error and unread. Blue dot with a ripple – running.
+ * Blue ring with a ripple – background tasks running while Claude idles; they wake it when done. Gray ring – open in a terminal.
+ * A finished tool step: green ok, red failed.
+ * Colors mean only this: amber needs you, red error, blue unseen or running, green a step succeeded, gray neutral
  */
 export function StatusIcon({ s, className }: { s: Mark; className?: string }) {
 	const icon =
@@ -30,9 +30,9 @@ export function StatusIcon({ s, className }: { s: Mark; className?: string }) {
 	);
 }
 /**
- * 带一圈扩散的点：dot 是点的样子（实心的底色，或者空心的边框），扩散的那圈照它画。
- * prefers-reduced-motion 时那圈不动，停成点外面一圈淡的：不然「运行中」和「已完成未读」都是一个蓝点，分不出来。
- * 扩散的那圈在动画里是单独一层（合成层），点不在小数像素上时两边对齐像素的办法不一样，会错开半个像素（空心圈最明显）：点也放进单独一层，两层对齐得一样
+ * A dot with a ripple; dot is its look (a fill or a border) and the ripple copies it.
+ * Reduced motion – the ripple stands still as a faint ring; without it, running and done-unread would be the same blue dot.
+ * The ripple animates on its own compositing layer, which snaps fractional pixels differently and drifts half a pixel (worst on rings) – so the dot gets a layer too
  */
 function Ping({ dot }: { dot: string }) {
 	return (

@@ -1,6 +1,6 @@
-// 提示：顶栏下面浮出一条（不挡顶栏，页面也不跳），几秒后收回去（不用 sonner）。同时只有一条，新的换掉旧的。
-// toast("已移出工作区", { action: { label: "撤销", onClick } })、toast.error("…")。
-// 出错的多留一会儿、字是红的；duration: Infinity 的一直留着（「有新版本 · 刷新」），点 × 收起
+// toast: one line slides in under the top bar – the bar stays visible, the page doesn't move – and leaves after a few seconds. No sonner.
+// One at a time; a new one replaces the old. toast("已移出工作区", { action: { label: "撤销", onClick } }), toast.error("…").
+// Errors stay longer and read red; duration: Infinity stays until × ("有新版本 · 刷新")
 import { X } from "lucide-react";
 import { useEffect, useSyncExternalStore } from "react";
 import { Button } from "./button.tsx";
@@ -25,7 +25,7 @@ export const toast = Object.assign((text: string, o?: Opts) => show(text, o), {
 	error: (text: string, o?: Opts) => show(text, o, true),
 });
 
-/** 放在页面最外层一次 */
+/** Mount once, at the top of the page */
 export function Toaster() {
 	const t = useSyncExternalStore(
 		(f) => { subs.add(f); return () => { subs.delete(f); }; },

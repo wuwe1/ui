@@ -1,6 +1,6 @@
 /*
- * 每页的底。不写 class 跟着系统；.dark / .light 固定那一块的深浅。
- * Tailwind 的 dark: 认 class，用到它的页面要 applyMode。
+ * Page base. No class – follows the OS; .dark or .light pins a subtree.
+ * Tailwind's dark: needs the class – pages that use it call applyMode.
  */
 :root {
 	color-scheme: light dark;
@@ -18,7 +18,7 @@
 	}
 	html {
 		@apply font-sans;
-		/* iOS 横屏时不自己放大字 */
+		/* iOS: no text inflation in landscape */
 		-webkit-text-size-adjust: 100%;
 	}
 	body {

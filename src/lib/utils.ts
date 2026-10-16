@@ -1,2 +1,2 @@
-// class 名合并：clsx + tailwind-merge 的合体（cn 这个包）。组件里一律用它
+// Class merging: clsx plus tailwind-merge, from the cn package. Components always use it
 export { cn } from "cn";

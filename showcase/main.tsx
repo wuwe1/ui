@@ -1,5 +1,5 @@
-// 展示页：主题，和每个组件的每种状态。
-// 截图直接打开一种：?p=组件&s=状态&mode=dark&w=390&bare=1
+// Showcase: the theme, and every state of every component.
+// Open one state for a screenshot: ?p=<component>&s=<state>&mode=dark&w=390&bare=1
 import "./styles.css";
 import { type ReactNode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -10,8 +10,8 @@ import { applyMode } from "../src/theme/index.ts";
 import { STORIES } from "./stories.tsx";
 import { ThemePage } from "./theme.tsx";
 
-const THEME_PAGE = "主题";
-const WIDTHS = [["390", "手机"], ["768", "平板"], ["0", "不限宽"]] as const;
+const THEME_PAGE = "Theme";
+const WIDTHS = [["390", "Phone"], ["768", "Tablet"], ["0", "Full"]] as const;
 
 function useParam(key: string, fallback: string) {
 	const [v, setV] = useState(() => new URLSearchParams(location.search).get(key) ?? fallback);
@@ -42,9 +42,9 @@ function Showcase() {
 					<Pick value={p} onChange={(v) => { setP(v); setS(""); }} options={pages.map((n) => [n, n] as const)} />
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
-					{p !== THEME_PAGE && <Pick value={s || "*"} onChange={(v) => setS(v === "*" ? "" : v)} options={[["*", "全部状态"], ...stories.map((x) => [x.name, x.name] as const)]} />}
+					{p !== THEME_PAGE && <Pick value={s || "*"} onChange={(v) => setS(v === "*" ? "" : v)} options={[["*", "All states"], ...stories.map((x) => [x.name, x.name] as const)]} />}
 					<span className="ml-auto" />
-					<Pick value={mode} onChange={setMode} options={[["light", "浅色"], ["dark", "深色"]]} />
+					<Pick value={mode} onChange={setMode} options={[["light", "Light"], ["dark", "Dark"]]} />
 					{p !== THEME_PAGE && <Pick value={w} onChange={setW} options={WIDTHS} />}
 				</div>
 			</header>
@@ -71,7 +71,7 @@ function Pick({ value, onChange, options }: { value: string; onChange: (v: strin
 	);
 }
 
-/** 一种状态：上面写它叫什么，下面是和主内容板一样的底（background），宽度照选的 */
+/** One state: its name, then a frame on the content surface (background) at the picked width */
 function Frame({ name, width, children }: { name: string; width: number; children: ReactNode }) {
 	return (
 		<section data-story={name} className="flex w-full flex-col gap-2" style={width ? { maxWidth: width } : undefined}>

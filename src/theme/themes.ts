@@ -1,10 +1,10 @@
-// 内置主题。改主题只改这里的旋钮，再 pnpm gen。
+// Built-in themes. Change a theme here, then pnpm gen.
 import type { ThemeInput } from "./roles.ts";
 
-/** 默认：黑白灰，四层灰从外到里一层比一层亮（affectUI 的底子），深色的灰带一点冷色；颜色只留给有固定意思的地方 */
+/** Default: grayscale, four grays brightening inward (affectUI's base), cool dark grays; color only where it means something */
 export const base: ThemeInput = {
 	name: "base",
-	note: "默认：黑白灰，颜色只留给状态和改动",
+	note: "Grayscale; color only for status and changes",
 	neutral: { light: { hue: 0, chroma: 0 }, dark: { hue: 286, chroma: 0.003 } },
 	signals: {
 		waiting: { light: { l: 0.769, c: 0.188, h: 70.08 } },
@@ -15,7 +15,7 @@ export const base: ThemeInput = {
 		modified: { light: { l: 0.666, c: 0.179, h: 58.318 }, dark: { l: 0.828, c: 0.189, h: 84.429 } },
 		renamed: { light: { l: 0.588, c: 0.158, h: 241.966 }, dark: { l: 0.746, c: 0.16, h: 232.661 } },
 	},
-	// dataviz 的参考调色板：相邻两色过了色盲区分度检查；深色是同一组色相为深色底另取的一档
+	// A reference dataviz palette: neighbors pass a color-blindness check. Dark mode takes the same hues, tuned for dark surfaces
 	series: {
 		light: ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"],
 		dark: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"],
@@ -23,14 +23,14 @@ export const base: ThemeInput = {
 	radius: 0.625,
 };
 
-/** 纸：灰带一点暖色（像纸和墨），圆角小一点。演示只改旋钮就能换一套样子 */
+/** Paper: warm grays like ink on paper, tighter corners. Shows a new look from knobs alone */
 export const paper: ThemeInput = {
 	...base,
 	name: "paper",
-	note: "暖灰：灰带一点黄，像纸和墨；圆角小一点",
+	note: "Warm grays like ink on paper; tighter corners",
 	neutral: { light: { hue: 75, chroma: 0.008 }, dark: { hue: 60, chroma: 0.006 } },
 	radius: 0.375,
 };
 
-/** 全部内置主题：第一个是默认（:root 上就是它） */
+/** Every built-in theme; the first is the default on :root */
 export const THEMES: ThemeInput[] = [base, paper];

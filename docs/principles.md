@@ -1,53 +1,67 @@
-# 完成度
+# Level of finish
 
-每个组件做完过一遍。学的是 affectUI：状态、键盘、无障碍、动效都想到，文档短。
+Every component gets the full pass. The bar is affectUI's: every state, key, screen reader and motion thought through, and docs that stay short.
 
-## 先写它做什么
+## Start with what it does
 
-一两句话。画出来的每个元素都要对得上；对不上的删。
+One or two sentences. Every element on screen serves them; cut what doesn't.
 
-## 状态
+## States
 
-- 默认、空、加载中、出错、很长、很多、禁用、实时变化，一个不少
-- 每种在展示页里有一个
-- 加载中画轮廓，和加载好的一样高
-- 空的说清这里会出现什么
+- Default, empty, loading, error, long, many, disabled, live – none missing
+- Each one has a story on the showcase
+- Empty says what will show up here
 
-## 键盘
+## Loading
 
-- 能点的都能 Tab 到，顺序和看到的一样
-- 一组同类的用方向键走，`Home` / `End` 到头尾
-- `Esc` 关浮层，焦点回到打开它的地方
-- 全局快捷键只给最该接的那一个；按钮上用 `Kbd` 写出来
-- 焦点环只在键盘操作时出现
+Pick by what is waiting:
 
-## 无障碍
+- A line of text in progress – `Shimmer`: 「正在等待回复…」, a running step
+- Content with a known shape – `Skeleton` at the size of what's coming, so nothing jumps when it lands
+- An icon slot in a button or chip – `Spinner`
+- A region with no known shape – `Loading` from `placeholder.tsx`
 
-- 信号色当字用 `-strong`
-- 不只靠颜色：状态点旁边有字
-- 能点的都有名字；只有图标的写 `aria-label`
-- 状态变了用 `role="status"` 读出来；会走的钟 `aria-hidden`
-- 按钮里不放按钮
-- 手机上能点的至少 44px
+Lists keep their status dots – a dot is a status, not a loader. Never put a spinner next to a line of text; shimmer the text.
 
-## 动效
+## Keyboard
 
-- 只给有意义的变化：出现、消失、换位置、数字变
-- 时长：小的 150ms，一般 200ms，抽屉 300ms
-- 出现 `ease-out-strong`，消失 `ease-in-strong`，跟手 `ease-drawer`
-- 换位置滑过去，不瞬移；数字 `tabular-nums`，变化时不抖
-- 减少动效时：移动换成淡入淡出，但不丢信息
+- Everything clickable is reachable by Tab, in visual order
+- Arrow keys move within a group; `Home` and `End` jump to the ends
+- `Esc` closes the overlay and returns focus to what opened it
+- A global shortcut only for the one action that matters most, shown on its button with `Kbd`
+- Focus rings show for keyboard use only
 
-## 响应式
+## Accessibility
 
-- 手机 < 768px，平板到 1023px，电脑 ≥ 1024px
-- 手机上浮层从下面出来（`Popsheet`）
-- 内容不撑破容器：长代码横着滚，标题截断时右边的状态留着
+- A signal color used as text is `-strong`
+- Never color alone: a status dot has words next to it
+- Everything clickable has a name; icon-only buttons get `aria-label`
+- Changes are announced with `role="status"`; a ticking clock is `aria-hidden`
+- No button inside a button
+- Touch targets are at least 44px on phones
 
-## 只吃数据
+## Motion
 
-props 进，回调出。不拿接口，不读全局状态。项目自己接数据：mixer 的 `InboxHome` 接 `Inbox`。
+- Only for change that means something: enter, exit, move, a number changing
+- Durations: 150ms small, 200ms default, 300ms drawers
+- Enter with `ease-out-strong`, exit with `ease-in-strong`, follow a finger with `ease-drawer`
+- Things glide to their new place, never jump; numbers are `tabular-nums` so they don't jitter
+- Reduced motion – movement becomes a fade, loops stand still, no information is lost
 
-## 文档
+## Responsive
 
-`docs/components/<组件>.md`，小节：做什么 / Anatomy / States / When to use / When not to use / Accessibility / Motion / Responsive / Notes for AI。
+- Phone under 768px, tablet to 1023px, desktop from 1024px
+- On phones, overlays come up from the bottom (`Popsheet`)
+- Content never breaks its container: long code scrolls sideways; a truncated title keeps its status on the right
+
+## Data in, events out
+
+Props in, callbacks out. No fetching, no global state. The project wires the data: mixer's `InboxHome` feeds `Inbox`.
+
+## Specs
+
+`docs/components/<file>.md`. First a title and one sentence on what it is, then these sections in order; leave out one with nothing to say:
+
+When to use, When not to use, Anatomy, States, API reference, Keyboard interactions, Accessibility, Motion, Responsive behavior, Notes for AI.
+
+`shimmer.md` is the model.

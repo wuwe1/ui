@@ -1,4 +1,4 @@
-// @wuwe1/ui/theme 的入口。
+// Entry for @wuwe1/ui/theme.
 export { applyMode, applyTheme, type ModePreference } from "./apply.ts";
 export { clampChroma, contrast, css, flatten, fromHex, inGamut, inP3, type Oklch, solve } from "./color.ts";
 export { themeCss, variables } from "./css.ts";

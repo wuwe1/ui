@@ -1,3 +1,3 @@
-// 从主屏幕打开的（iOS「添加到主屏幕」、装成 App 的 PWA）：没有地址栏，屏幕边缘的手势归系统（抽屉的手势要让开，lib/drawer.ts）
+// Opened from the home screen (iOS Add to Home Screen, an installed PWA): no address bar, and the screen edges belong to the OS – drawer swipes yield (lib/drawer.ts)
 export const standalone =
 	typeof window !== "undefined" && (matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true);

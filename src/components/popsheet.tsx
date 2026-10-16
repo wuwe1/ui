@@ -1,4 +1,4 @@
-// 点开一个小面板：电脑上是贴着按钮的浮层（Popover），手机上从下面出来、整屏宽（Sheet）。上面一行标题，可带一句说明
+// Popsheet: a small panel from a button – a Popover beside it on desktop, a full-width bottom Sheet on phones. A title line, an optional description
 import type { ComponentProps, ReactNode } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover.tsx";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "./sheet.tsx";
@@ -6,8 +6,8 @@ import { useSidebar } from "./sidebar.tsx";
 import { cn } from "../lib/utils.ts";
 
 /**
- * trigger 是按钮本身（自己会开关，不用另写 onClick；它的 onClick 里 preventDefault 就不开关）；
- * className、contentProps 只给电脑上的浮层：宽、最大高度；指着就开的那种（目录）要的指针进出、不抢焦点
+ * trigger is the button itself and toggles on its own; preventDefault in its onClick to stop that.
+ * className and contentProps reach the desktop popover only: width, max height, and the pointer and focus props a hover-to-open panel needs
  */
 export function Popsheet({ trigger, title, description, side, align, open, onOpenChange, className, contentProps, children }: {
 	trigger: ReactNode;
@@ -21,7 +21,7 @@ export function Popsheet({ trigger, title, description, side, align, open, onOpe
 	contentProps?: Omit<ComponentProps<typeof PopoverContent>, "children" | "className" | "side" | "align">;
 	children: ReactNode;
 }) {
-	// 和侧栏用同一个判断（已经算好了，不会先画成浮层再换）
+	// The sidebar's check – already settled, so it never draws a popover first and swaps
 	const { isMobile } = useSidebar();
 	if (isMobile)
 		return (
@@ -40,7 +40,7 @@ export function Popsheet({ trigger, title, description, side, align, open, onOpe
 		<Popover open={open} onOpenChange={onOpenChange}>
 			<PopoverTrigger asChild>{trigger}</PopoverTrigger>
 			<PopoverContent side={side} align={align} className={cn("overflow-y-auto p-3", className)} {...contentProps}>
-				{/* 内容长、滚着看时标题留在顶上 */}
+				{/* The title stays on top while long content scrolls */}
 				<div className="sticky -top-3 z-10 -mx-3 -mt-3 flex flex-col gap-0.5 bg-popover px-3 pt-3 pb-1">
 					<span className="text-sm font-medium">{title}</span>
 					{description && <span className="text-xs text-muted-foreground">{description}</span>}

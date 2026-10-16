@@ -1,15 +1,15 @@
 /*
- * token → Tailwind 名字，还有字号、圆角、字体、缓动。
- * 只放 Tailwind 指令：mixer 现场编 block 的 class 时会整份拿去用。
+ * Tokens → Tailwind names, plus type sizes, radii, fonts and easings.
+ * Tailwind directives only: mixer compiles block classes against this whole file.
  */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-	/* 字体：Geist 打底；中文落到系统的黑体（苹方、冬青、思源），不让浏览器挑一个宋体 */
+	/* Geist first; Chinese falls back to a system sans (PingFang, Hiragino, Noto), never a browser-picked serif */
 	--font-sans: "Geist Variable", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
 	--font-heading: var(--font-sans);
 
-	/* 面和字 */
+	/* Surfaces and text */
 	--color-sidebar: var(--sidebar);
 	--color-background: var(--background);
 	--color-card: var(--card);
@@ -36,7 +36,7 @@
 	--color-ring: var(--ring);
 	--color-sidebar-ring: var(--sidebar-ring);
 
-	/* 有固定意思的颜色：实心（点、图标、填色）、strong（当字用）、subtle（淡底）。removed 就是 destructive */
+	/* Signals: solid for dots, icons, fills; -strong for text; -subtle for tints. removed is destructive */
 	--color-waiting: var(--waiting);
 	--color-waiting-strong: var(--waiting-strong);
 	--color-waiting-subtle: var(--waiting-subtle);
@@ -62,7 +62,7 @@
 	--color-renamed-strong: var(--renamed-strong);
 	--color-renamed-subtle: var(--renamed-subtle);
 
-	/* 系列色：图表里哪一组、构成图里哪一部分，按顺序用 */
+	/* Series: groups in a chart, parts of a whole – in order */
 	--color-series-1: var(--series-1);
 	--color-series-2: var(--series-2);
 	--color-series-3: var(--series-3);
@@ -72,7 +72,7 @@
 	--color-series-7: var(--series-7);
 	--color-series-8: var(--series-8);
 
-	/* 圆角：主题只给一个基准（--radius），这里是它的倍数 */
+	/* Radii: multiples of the theme's one base, --radius */
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-lg: var(--radius);
@@ -82,8 +82,8 @@
 	--radius-4xl: calc(var(--radius) * 2.6);
 
 	/*
-	 * 字号：t-shirt 名字，cn（tailwind-merge）才认得它是字号（叫 text-ui 之类会被当成颜色，和 text-muted-foreground 写在一起时被删掉）。
-	 * 2xs 11px 时间、徽标、小按钮；xs 12px 代码、次要文字；md 13px 列表行；sm 14px 正文；lg 18px 标题。中文的行高比英文高一点
+	 * Type sizes use t-shirt names so cn (tailwind-merge) knows they're sizes – text-ui would pass for a color and get dropped next to text-muted-foreground.
+	 * 2xs 11px times, badges, small buttons; xs 12px code, secondary text; md 13px list rows; sm 14px body; lg 18px titles. Line heights run a bit tall for Chinese
 	 */
 	--text-2xs: 11px;
 	--text-2xs--line-height: 1.4;
@@ -94,8 +94,8 @@
 	--leading-code: 1.6;
 
 	/*
-	 * 动效：缓动曲线。出现用 out（先快后慢，跟手），消失用 in（先慢后快，干脆），
-	 * 跟着手指的抽屉、Sheet 用 drawer（iOS 的那条，松手后接着速度滑到位）。时长、什么时候该动、怎么减少动效见 docs/principles.md
+	 * Easings. out to enter – fast, then settling; in to exit – slow, then gone.
+	 * drawer for anything that follows a finger – iOS's curve, carrying the release velocity home. Durations and reduced motion: docs/principles.md
 	 */
 	--ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 	--ease-in-strong: cubic-bezier(0.5, 0, 0.75, 0);

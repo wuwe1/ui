@@ -1,47 +1,66 @@
-# 写法
+# Writing
 
-## 文档、注释、提交信息
+How prose and UI copy read. The bar is affectUI: short, concrete, nothing to skip.
 
-学 affectUI：短，具体，只写有用的。
+## Prose
 
-- 第一句给结论：它是什么、做什么
-- 一条一件事，一句写完，不超过一行
-- 写看得见的效果，不写实现过程
-- 情况和结果用破折号连：`不到半秒的等待 – loader 只会闪一下`
-- 数字写具体：4.5:1、150ms、44px，不写「很快」「小一点」
-- 不套括号，不连冒号，不写「其实」「一下」「这样的话」
-- 读者不看这句也懂，就删
-- 注释写为什么，不写做了什么；一般一行
-- 提交信息：第一行一句话说做了什么；下面最多三行，写为什么、在哪看过
+Docs, specs, comments, commit messages – English in this repo.
 
-改前：
+- Lead with what it is or does
+- One idea per bullet, one line
+- Say what people see, not how the code gets there
+- Join a situation and its result with an en dash: `Waits under half a second – the loader would only flash`
+- Give the number: 4.5:1, 150ms, 44px – not "fast" or "a bit smaller"
+- Plain words: use, show, need – not utilize, leverage, facilitate
+- No filler: simply, just, easily, basically, in order to, allows you to, please
+- Present tense, active voice, sentence-case headings
+- No nested parentheses, no chains of colons
+- If the reader can do without a sentence, cut it
+- Comments say why, not what – usually one line
+- Commit messages: the first line says what changed; up to three more say why and where it was checked
+
+Before:
+
+> To change the theme, you simply need to adjust a few knobs, and all of the other colors will be derived from them automatically. Every color that is used for text has a contrast requirement, which is enforced by the tests. It is possible to apply themes and light and dark modes to any part of the page.
+
+After:
+
+> Turn a few knobs; every color follows. Tests hold text contrast. Themes and modes apply to any subtree.
+
+## Chinese prose
+
+Projects that write docs in Chinese – mixer – follow the same rules, plus:
+
+- No 「其实」「一下」「这样的话」
+- The en dash joins a situation and its result here too: `不到半秒的等待 – loader 只会闪一下`
+
+Before:
 
 > 改主题只动几个旋钮，别的颜色都推出来；每个当字用的颜色都有对比度要求，测试守着；主题、深浅色能套在页面的任何一块上。代码：`src/theme/`，各文件开头写着它做什么。
 
-改后：
+After:
 
 > 改几个旋钮，整套颜色跟着变。字的对比度有测试守着。主题、深浅色能套在任何一块上。
 
-## 命名
+## Naming
 
-- 标识符用英文原名，不翻译：组件、变量、token、文件名、文档小节名、术语
-- 新起的也直接用名字：`Inbox`，不叫「任务总览」
-- 给人看的说明用中文
-- 文件 kebab-case（`status-icon.tsx`），组件 PascalCase（`StatusIcon`）
-- token 说用途（`muted-foreground`），不说颜色（`gray-500`）
+- Identifiers keep their English names everywhere, Chinese prose included: components, variables, tokens, files, section names, terms
+- New things get a name, not a translation: `Inbox`, never 「任务总览」
+- Files kebab-case (`status-icon.tsx`), components PascalCase (`StatusIcon`)
+- Tokens name a role (`muted-foreground`), never a color (`gray-500`)
 
-## 界面文字
+## UI copy
 
-像系统设置，不像聊天。
+Chinese, and it reads like system settings, not chat.
 
-- 动词用书面的：运行、显示、查看、停止、关闭、移除、取消、创建
-- 出错：`X 失败：原因`；被拦下：`原因：怎么办`；不知道原因：`未知错误`
-- 不写「没 X」「不对」「不认识」，写「X 失败」「无效」「未知」
-- 状态：`已 X`、`X 中` / `正在 X…`、`待 X`、`X 失败`
-- 空：`X 为空` 或 `暂无 X`，下一句说这里会出现什么
-- 按钮 2–6 字，动词开头；要再填一句的带「…」；取消就写「取消」
-- 状态不超过 8 字；tooltip 一句；说明不超过两句
-- 一行里几样信息不用「·」「|」隔开，靠位置、颜色、字重分；上下级用「›」
-- 称「你」，不用「您」「请」；说「这一轮」「这个会话」，不说「本轮」「此」
-- 数量跟在标题后面，不加粗；百分号紧贴数字；「万」保留一位小数
-- 省略号「…」；界面元素名用「」；数字和单位间空格（14 MB）；说「点」，不说「点击」
+- Formal verbs: 运行、显示、查看、停止、关闭、移除、取消、创建
+- Errors: `X 失败：原因`. Blocked: `原因：怎么办`. Cause unknown: `未知错误`
+- Not 「没 X」「不对」「不认识」 – write 「X 失败」「无效」「未知」
+- Status: `已 X`, `X 中` or `正在 X…`, `待 X`, `X 失败`
+- Empty: `X 为空` or `暂无 X`, then one line on what will show up
+- Buttons: 2–6 characters, verb first; `…` when another input follows; cancel is 「取消」
+- Status up to 8 characters; a tooltip is one sentence; a description two at most
+- Facts in a row are set apart by position, color and weight – never `·` or `|`. Hierarchy uses `›`
+- Say 「你」, never 「您」 or 「请」. Say 「这一轮」「这个会话」, not 「本轮」「此」
+- A count follows its title, not bold; `%` hugs the number; 「万」 keeps one decimal
+- Ellipsis is `…`; UI element names go in 「」; a space between number and unit (14 MB); 「点」, not 「点击」

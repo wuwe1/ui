@@ -1,4 +1,4 @@
-// 主题页：拖旋钮看深浅两块预览和每个 token 的对比度，「复制」贴回 themes.ts。
+// Theme page: drag the knobs, watch both previews and every token's contrast, then Copy into themes.ts.
 import { Check, Copy, RotateCcw, X } from "lucide-react";
 import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
 import { Badge } from "../src/components/badge.tsx";
@@ -10,18 +10,18 @@ import { cn } from "../src/lib/utils.ts";
 import { contrast, flatten, type Mode, type Role, roles, SIGNALS, THEMES, type ThemeInput, type Tint, variables } from "../src/theme/index.ts";
 
 const MODES: Mode[] = ["light", "dark"];
-const MODE_NAME: Record<Mode, string> = { light: "浅色", dark: "深色" };
+const MODE_NAME: Record<Mode, string> = { light: "Light", dark: "Dark" };
 
-/** token 分组：照名字认 */
+/** Token group, told by name */
 function groupOf(name: string): string {
-	if (name.startsWith("series")) return "系列色";
-	if ((SIGNALS as readonly string[]).some((s) => name === s || name.startsWith(`${s}-`))) return "有固定意思的颜色";
-	if (name.endsWith("foreground")) return "字";
-	if (["secondary", "muted", "accent", "sidebar-accent"].includes(name)) return "半透明的层";
-	if (["border", "input", "sidebar-border", "ring", "sidebar-ring"].includes(name)) return "边和焦点";
-	return "面";
+	if (name.startsWith("series")) return "Series";
+	if ((SIGNALS as readonly string[]).some((s) => name === s || name.startsWith(`${s}-`))) return "Signals";
+	if (name.endsWith("foreground")) return "Text";
+	if (["secondary", "muted", "accent", "sidebar-accent"].includes(name)) return "Overlays";
+	if (["border", "input", "sidebar-border", "ring", "sidebar-ring"].includes(name)) return "Borders and focus";
+	return "Surfaces";
 }
-const GROUPS = ["面", "字", "半透明的层", "边和焦点", "有固定意思的颜色"];
+const GROUPS = ["Surfaces", "Text", "Overlays", "Borders and focus", "Signals"];
 
 export function ThemePage() {
 	const [from, setFrom] = useState(THEMES[0].name);
@@ -33,34 +33,34 @@ export function ThemePage() {
 		setFrom(name);
 		setTheme(THEMES.find((t) => t.name === name) ?? THEMES[0]);
 	};
-	const tint = (mode: Mode, k: keyof Tint, v: number) => setTheme((t) => ({ ...t, name: "custom", note: "自定义", neutral: { ...t.neutral, [mode]: { ...t.neutral[mode], [k]: v } } }));
+	const tint = (mode: Mode, k: keyof Tint, v: number) => setTheme((t) => ({ ...t, name: "custom", note: "Custom", neutral: { ...t.neutral, [mode]: { ...t.neutral[mode], [k]: v } } }));
 	const copy = () => {
 		const snippet = `neutral: ${JSON.stringify(theme.neutral)},\nradius: ${theme.radius},`;
-		navigator.clipboard?.writeText(snippet).then(() => toast("已复制，贴进 src/theme/themes.ts"), () => toast.error("复制失败"));
+		navigator.clipboard?.writeText(snippet).then(() => toast("Copied – paste into src/theme/themes.ts"), () => toast.error("Copy failed"));
 	};
 
 	return (
 		<main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-6">
 			<section className="flex flex-col gap-4 rounded-xl border bg-background p-4">
 				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-sm font-medium">旋钮</span>
-					<span className="text-xs text-muted-foreground">改主题只改这些，别的都推出来</span>
+					<span className="text-sm font-medium">Knobs</span>
+					<span className="text-xs text-muted-foreground">Turn these; every other color follows</span>
 					<span className="ml-auto" />
 					<ToggleGroup type="single" variant="outline" size="sm" value={from} onValueChange={(v) => v && reset(v)}>
-						{THEMES.map((t) => <ToggleGroupItem key={t.name} value={t.name}>从 {t.name} 开始</ToggleGroupItem>)}
+						{THEMES.map((t) => <ToggleGroupItem key={t.name} value={t.name}>From {t.name}</ToggleGroupItem>)}
 					</ToggleGroup>
-					<Button variant="outline" size="sm" onClick={() => reset(from)}><RotateCcw />还原</Button>
-					<Button size="sm" onClick={copy}><Copy />复制</Button>
+					<Button variant="outline" size="sm" onClick={() => reset(from)}><RotateCcw />Reset</Button>
+					<Button size="sm" onClick={copy}><Copy />Copy</Button>
 				</div>
 				<div className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
 					{MODES.map((m) => (
 						<div key={m} className="flex flex-col gap-2">
-							<div className="text-xs text-muted-foreground">{MODE_NAME[m]}的灰</div>
-							<Knob label="色相" value={theme.neutral[m].hue} min={0} max={360} step={1} onChange={(v) => tint(m, "hue", v)} format={(v) => `${v}°`} />
-							<Knob label="彩度" value={theme.neutral[m].chroma} min={0} max={0.03} step={0.001} onChange={(v) => tint(m, "chroma", v)} format={(v) => v.toFixed(3)} />
+							<div className="text-xs text-muted-foreground">{MODE_NAME[m]} neutral</div>
+							<Knob label="Hue" value={theme.neutral[m].hue} min={0} max={360} step={1} onChange={(v) => tint(m, "hue", v)} format={(v) => `${v}°`} />
+							<Knob label="Chroma" value={theme.neutral[m].chroma} min={0} max={0.03} step={0.001} onChange={(v) => tint(m, "chroma", v)} format={(v) => v.toFixed(3)} />
 						</div>
 					))}
-					<Knob label="圆角" value={theme.radius} min={0} max={1.2} step={0.025} onChange={(v) => setTheme((t) => ({ ...t, radius: v }))} format={(v) => `${v}rem`} />
+					<Knob label="Radius" value={theme.radius} min={0} max={1.2} step={0.025} onChange={(v) => setTheme((t) => ({ ...t, radius: v }))} format={(v) => `${v}rem`} />
 				</div>
 			</section>
 
@@ -87,14 +87,14 @@ export function ThemePage() {
 function Knob({ label, value, min, max, step, onChange, format }: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; format: (v: number) => string }) {
 	return (
 		<label className="flex items-center gap-3 text-xs">
-			<span className="w-8 shrink-0 text-muted-foreground">{label}</span>
+			<span className="w-12 shrink-0 text-muted-foreground">{label}</span>
 			<input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="h-6 flex-1 accent-primary" />
 			<span className="w-16 shrink-0 text-right tabular-nums">{format(value)}</span>
 		</label>
 	);
 }
 
-/** 一小块真实的界面：侧栏、主内容板、卡片、按钮、状态、倒计时 */
+/** A slice of real UI: sidebar, content panel, card, buttons, status, countdown */
 function Preview({ mode }: { mode: Mode }) {
 	return (
 		<div className="flex h-64 bg-sidebar text-foreground">
@@ -126,7 +126,7 @@ function Preview({ mode }: { mode: Mode }) {
 	);
 }
 
-/** 一个 token：名字、用途、两种模式的样子；字的 token 带对比度（最差的那个底） */
+/** One token: name, use, both modes; text tokens show contrast against their worst surface */
 function Row({ r, list, vars }: { r: Role; list: Role[]; vars: CSSProperties }) {
 	const value = new Map(list.map((x) => [x.name, x.value]));
 	return (
@@ -139,7 +139,7 @@ function Row({ r, list, vars }: { r: Role; list: Role[]; vars: CSSProperties }) 
 				return (
 					<div key={m} className={cn(m, "flex items-center gap-2 rounded-md p-1")} style={vars}>
 						<Sample r={r} />
-						<span className={cn("flex w-14 items-center gap-0.5 text-2xs tabular-nums", ok ? "text-muted-foreground" : "text-destructive-strong")} title={worst === null ? undefined : `和 ${r.needs?.[1].join("、")} 里最差的那个比，要 ${r.needs?.[0]}`}>
+						<span className={cn("flex w-14 items-center gap-0.5 text-2xs tabular-nums", ok ? "text-muted-foreground" : "text-destructive-strong")} title={worst === null ? undefined : `Worst of ${r.needs?.[1].join(", ")}; needs ${r.needs?.[0]}`}>
 							{worst !== null && (ok ? <Check className="size-3" /> : <X className="size-3" />)}
 							{worst?.toFixed(1)}
 						</span>
@@ -150,20 +150,20 @@ function Row({ r, list, vars }: { r: Role; list: Role[]; vars: CSSProperties }) 
 	);
 }
 
-/** token 的样子：面是一块，字是写在它要放的第一个底上，半透明的层叠在 background 上，边是一圈 */
+/** How a token looks: surfaces fill a swatch, text sits on its first surface, overlays sit on background, borders draw a ring */
 function Sample({ r }: { r: Role }) {
 	const v = `var(--${r.name})`;
 	const g = groupOf(r.name);
 	const box = "flex h-8 w-16 shrink-0 items-center justify-center rounded-md text-xs";
 	let body: ReactNode;
-	if (g === "字" || r.name.endsWith("-strong")) {
+	if (g === "Text" || r.name.endsWith("-strong")) {
 		const under = r.needs?.[1][0] ?? "background";
 		body = <span className={cn(box, "border font-medium")} style={{ background: `var(--${under === "sidebar" ? "sidebar" : under})`, color: v }}>Aa 字</span>;
-	} else if (g === "半透明的层" || r.name.endsWith("-subtle")) {
+	} else if (g === "Overlays" || r.name.endsWith("-subtle")) {
 		body = <span className={cn(box, "border bg-background")}><span className="size-6 rounded" style={{ background: v }} /></span>;
-	} else if (g === "边和焦点") {
+	} else if (g === "Borders and focus") {
 		body = <span className={cn(box, "bg-background")} style={{ border: `2px solid ${v}` }} />;
-	} else if (g === "有固定意思的颜色") {
+	} else if (g === "Signals") {
 		body = <span className={cn(box, "border bg-background")}><span className="size-3 rounded-full" style={{ background: v }} /></span>;
 	} else {
 		body = <span className={cn(box, "border")} style={{ background: v }} />;

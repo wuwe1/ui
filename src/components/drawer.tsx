@@ -1,15 +1,15 @@
-// 手机上的抽屉（左边的侧栏、右边的面板）：一直挂在页面上，位置由 lib/drawer 管（拖的时候跟手）。
-// 不用 Sheet：它关着时会卸掉，拖的时候没东西可动；强行挂着又会把整页的滚动、点击锁住。
-// 横着滑开关的手势（useSwipe）也在这里：只在手机上挂这个组件，挂着就接手势（关着时也接，才拉得开）
+// Phone drawer – the sidebar on the left, a panel on the right. Always mounted; lib/drawer owns the position and follows the finger.
+// Not Sheet: it unmounts when closed, leaving nothing to drag, and forcing it mounted locks the page's scrolling and taps.
+// The swipe (useSwipe) lives here too: mount this on phones only; mounted, it takes swipes – closed too, or it couldn't be pulled open
 import { type ComponentProps, useEffect, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import * as drawer from "../lib/drawer.ts";
 import { cn } from "../lib/utils.ts";
 
-/** onHidden：关到底、藏起来了，里面的东西可以卸了；onStart：从关着开始拖开（先把里面画上） */
+/** onHidden – fully closed and hidden, content can unmount. onStart – a drag began from closed, render the content */
 export function Drawer({ d, open, onOpenChange, label, onHidden, onStart, clear, className, children, ...props }: Omit<ComponentProps<"div">, "role"> & {
 	d: drawer.Drawer;
-	/** 后面的东西要看得清（只盖住一部分的面板）：遮罩只压一层浅灰，不模糊 */
+	/** The page behind must stay readable (a partial panel): a light gray scrim, no blur */
 	clear?: boolean;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;

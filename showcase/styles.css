@@ -1,4 +1,4 @@
-/* 展示页自己的入口：Tailwind（扫整个仓库：库的组件、展示页）、库的样式、字体 */
+/* Showcase entry: Tailwind scanning the whole repo (components and showcase), the library styles, the font */
 @import "tailwindcss" source("..");
 @import "../src/styles.css";
 @import "@fontsource-variable/geist";

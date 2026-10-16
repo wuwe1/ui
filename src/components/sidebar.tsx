@@ -168,7 +168,7 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      // 手机上：从左边拉出来的抽屉（components/drawer.tsx），往右滑打开、往左滑关上
+      // Phone: a drawer from the left (components/drawer.tsx) – swipe right to open, left to close
       <Drawer
         d={drawer.sidebar}
         open={openMobile}

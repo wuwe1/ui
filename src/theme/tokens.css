@@ -1,6 +1,6 @@
-/* 生成的，别手改。改 themes.ts 或 roles.ts，再 pnpm gen。 */
+/* Generated – don't edit. Change themes.ts or roles.ts, then pnpm gen. */
 
-/* base：默认：黑白灰，颜色只留给状态和改动 */
+/* base – Grayscale; color only for status and changes */
 :root,
 [data-theme="base"] {
 	--sidebar: light-dark(oklch(0.9702 0 0), oklch(0.1548 0.003 286));
@@ -60,7 +60,7 @@
 	--radius: 0.625rem;
 }
 
-/* paper：暖灰：灰带一点黄，像纸和墨；圆角小一点 */
+/* paper – Warm grays like ink on paper; tighter corners */
 [data-theme="paper"] {
 	--sidebar: light-dark(oklch(0.9702 0.008 75), oklch(0.1548 0.006 60));
 	--background: light-dark(oklch(0.9911 0.008 75), oklch(0.1826 0.006 60));

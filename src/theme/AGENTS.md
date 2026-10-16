@@ -1,9 +1,9 @@
 # src/theme
 
-设计见 `docs/theme.md`。
+Design: `docs/theme.md`.
 
-- `tokens.css` 是生成的：改 `themes.ts` 或 `roles.ts`，再 `pnpm gen`。没 gen 就提交，CI 会挂
-- 新 token 加在 `roles.ts`：写 `doc`；当字用的写 `needs`（正文 7:1，次要 4.5:1）；再到 `theme.css` 加 Tailwind 名字
-- 颜色在 OKLCH 里推，不手挑 hex。系列色例外：它是过了色盲检查的调色板
-- `theme.css` 只放 Tailwind 指令：mixer 现场编 block 的 class 时会整份拿去用
-- 深浅色靠 `light-dark()`，需要 Safari 17.5+；不写 `.dark [data-theme]` 这类组合选择器
+- `tokens.css` is generated: change `themes.ts` or `roles.ts`, then `pnpm gen`. Commit it stale – CI fails
+- A new token goes in `roles.ts` with a `doc`; a text token also gets `needs` (body 7:1, secondary 4.5:1). Then its Tailwind name goes in `theme.css`
+- Colors are derived in OKLCH, never hand-picked hex. Series colors are the exception – a palette checked for color blindness
+- `theme.css` and `variants.css` hold Tailwind directives and keyframes only – mixer compiles every block's classes against them
+- Modes ride on `light-dark()` – Safari 17.5+. No compound selectors like `.dark [data-theme]`

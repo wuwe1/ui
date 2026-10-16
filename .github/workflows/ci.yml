@@ -1,4 +1,4 @@
-# 每次推送、PR：生成的 tokens.css 是最新的、类型检查、测试、展示页打得出来
+# Every push and PR: tokens.css is current, types check, tests pass, the showcase builds
 name: ci
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: tokens.css 是最新的（改了主题要 pnpm gen）
+      - name: tokens.css is current (pnpm gen after a theme change)
         run: pnpm gen && git diff --exit-code src/theme/tokens.css
       - run: pnpm check
       - run: pnpm test

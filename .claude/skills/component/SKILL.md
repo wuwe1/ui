@@ -1,52 +1,53 @@
 ---
 name: component
-description: 在 @wuwe1/ui 里做新组件，或把项目里的组件搬进来时用。先写规格，再在展示页摆出每种状态，再查键盘、无障碍、动效、深浅色、手机宽度，最后写文档、在项目里接上。
+description: Build a new component in @wuwe1/ui, or move one in from a project. Spec first, then every state on the showcase, then keys, screen reader, motion, both modes and phone width, then wire it into the project.
 ---
 
-# 做一个组件
+# Build a component
 
-要求见 `docs/principles.md`、`docs/theme.md`、`docs/writing.md`。一步做完再下一步。
+The bars: `docs/principles.md`, `docs/theme.md`, `docs/writing.md`. Finish each step before the next.
 
-## 1. 它做什么
+## 1. What it does
 
-- 一两句话
-- 有 affectUI 的同类组件就先看演示页：截图（深浅色、手机电脑），取元素上的 CSS 变量。只学设计，不搬源码
-- 从项目搬来的：列出它现在处理的每种情况，搬完不能少
+- One or two sentences
+- affectUI has a counterpart – study its page first: screenshots in both modes on phone and desktop, and the CSS variables on its elements. Learn the design; never copy the source
+- Moving one in from a project – list every case it handles today; none may be lost
 
-## 2. 规格
+## 2. Spec
 
-先写 `docs/components/<文件名>.md`，再写代码。小节：做什么 / Anatomy / States / When to use / When not to use / Accessibility / Motion / Responsive / Notes for AI。States 要全。
+Write `docs/components/<file>.md` before any code, sections in the order `docs/principles.md` gives. States must be complete.
 
-## 3. 接口
+## 3. API
 
-- props 进，回调出；不拿接口，不读全局状态
-- 加载中、空由组件自己画：`items={null}` 是加载中，`empty` 是空时放什么
-- 纯逻辑放 `src/lib/<名字>.ts`，配 `test/<名字>.test.ts`
+- Props in, callbacks out; no fetching, no global state
+- Loading and empty are the component's job: `items={null}` is loading, `empty` is what shows when there's nothing
+- Pure logic goes in `src/lib/<name>.ts`, tested in `test/<name>.test.ts`
 
-## 4. 实现
+## 4. Build
 
-- 只用 token；信号色当字用 `-strong`
-- 键盘、无障碍、动效照 `docs/principles.md`
-- 文件开头一两行注释：它是什么，为什么这样做
+- Tokens only; a signal as text is `-strong`
+- Keys, screen reader and motion per `docs/principles.md`
+- The file's first comment: what it is, and why it's built this way – a line or two
 
-## 5. 展示页
+## 5. Showcase
 
-在 `showcase/stories.tsx` 登记，每个 State 一个，数据像真的。`pnpm dev`，切深浅色和宽度一个个看。
+Add it to `showcase/stories.tsx`, one story per state, with data that looks real. `pnpm dev`, then flip modes and widths through each one.
 
-## 6. 检查
+## 6. Check
 
-- `pnpm check`、`pnpm test`、`pnpm build`
-- 截图：每个状态 × 手机 390 / 电脑 × 深浅色。直接打开一种：`/?p=<组件>&s=<状态>&mode=dark&w=390&bare=1`
-- Playwright 不在依赖里：`npm i playwright-core` 装到 `/tmp/pw`，`npx playwright-core install webkit`。用 WebKit，和 iPhone 同内核
-- 元素比视口高就把视口开大，滚动拼接的截图会走样
-- 键盘走一遍：Tab 顺序、`Enter`、`Esc`、焦点环
-- `page.emulateMedia({ reducedMotion: "reduce" })` 再看一遍
-- 服务按 PID 停掉；截图放 `/tmp`
+- `pnpm check`, `pnpm test`, `pnpm build`
+- Screenshots: every state × phone 390 and desktop × both modes. Open one directly: `/?p=<Component>&s=<State>&mode=dark&w=390&bare=1`
+- The dev server listens on `localhost` over IPv6 – `127.0.0.1` won't connect
+- Playwright isn't a dependency: `npm i playwright-core` in `/tmp/pw`, then `npx playwright-core install webkit`. Use WebKit – the iPhone's engine
+- An element taller than the viewport – enlarge the viewport; stitched scrolling screenshots distort
+- Walk the keys: Tab order, `Enter`, `Esc`, focus rings
+- Once more with `page.emulateMedia({ reducedMotion: "reduce" })`
+- Stop servers by PID; screenshots go in `/tmp`
 
-## 7. 在项目里接上
+## 7. Wire it into the project
 
-引 `@wuwe1/ui/<文件名>`，写接数据的那一层，删掉项目里原来那份，同步项目的文档。
+Import `@wuwe1/ui/<file>`, write the layer that feeds it data, delete the project's copy, update the project's docs.
 
-## 8. 提交
+## 8. Commit
 
-ui、项目各提交一次。第一行说做了什么，下面写在哪看过。
+One commit in ui, one in the project. The first line says what changed; below it, where it was checked.

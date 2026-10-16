@@ -1,5 +1,5 @@
-// Button：从 shadcn/ui 改的。改过的地方：尺寸多了 xs、icon-xs、icon-sm、icon-lg；destructive 的字用 destructive-strong（对比度够）；
-// 最宽不超过容器、放不下的字从右边截掉（justify-center-safe：放得下居中，放不下从左边排；展示页「很长」那种状态，以前会伸到圆角外面）
+// Button: from shadcn/ui. Changed – sizes xs, icon-xs, icon-sm, icon-lg; destructive text uses destructive-strong for contrast;
+// never wider than its container, and a label that doesn't fit is cut on the right (justify-center-safe – centered when it fits, start-aligned when not; it used to spill past the corners, see Long label)
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"

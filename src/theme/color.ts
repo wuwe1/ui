@@ -1,12 +1,12 @@
-// 颜色算法：OKLCH ↔ sRGB、对比度（WCAG 2）、按对比度求亮度。
-// 输出只降到 P3 放得下：广色域屏上照样鲜艳，Chrome 也不会截断跑偏。
+// Color math: OKLCH ↔ sRGB, WCAG 2 contrast, solving lightness for a contrast target.
+// Output is clamped to P3 only – vivid on wide-gamut screens, and Chrome never clips a hue off course.
 
-/** OKLCH：l 亮度 0–1，c 彩度（sRGB 里一般不超过 0.37），h 色相（度），alpha 不透明度（不写是 1） */
+/** OKLCH: l lightness 0–1, c chroma (rarely above 0.37 in sRGB), h hue in degrees, alpha opacity (1 when absent) */
 export type Oklch = { l: number; c: number; h: number; alpha?: number };
 
 type Rgb = [number, number, number];
 
-/** OKLCH → 线性 sRGB（可能超出 0–1：在 sRGB 外面） */
+/** OKLCH → linear sRGB; outside 0–1 means outside sRGB */
 export function linear({ l, c, h }: Oklch): Rgb {
 	const a = c * Math.cos((h * Math.PI) / 180);
 	const b = c * Math.sin((h * Math.PI) / 180);
@@ -23,12 +23,12 @@ export function linear({ l, c, h }: Oklch): Rgb {
 const encode = (x: number) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
 const decode = (x: number) => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4);
 
-/** 在不在 sRGB 里（留一点余量，算出来的边界值会有舍入） */
+/** Inside sRGB, with a little slack for rounding at the edge */
 export function inGamut(o: Oklch): boolean {
 	return linear(o).every((x) => x >= -1e-4 && x <= 1 + 1e-4);
 }
 
-/** 在不在 Display P3 里：线性 sRGB → XYZ（D65）→ 线性 P3 */
+/** Inside Display P3: linear sRGB → XYZ (D65) → linear P3 */
 export function inP3(o: Oklch): boolean {
 	const [r, g, b] = linear(o);
 	const x = 0.4123908 * r + 0.3575843 * g + 0.1804808 * b;
@@ -41,7 +41,7 @@ export function inP3(o: Oklch): boolean {
 	].every((v) => v >= -1e-4 && v <= 1 + 1e-4);
 }
 
-/** 放不下（sRGB，或者 within 给 inP3）：亮度、色相不动，彩度往下降到刚好放得下（二分） */
+/** Out of gamut (sRGB, or inP3 via within): keeps lightness and hue, lowers chroma until it fits (bisection) */
 export function clampChroma(o: Oklch, within: (o: Oklch) => boolean = inGamut): Oklch {
 	if (within(o)) return o;
 	let lo = 0;
@@ -54,12 +54,12 @@ export function clampChroma(o: Oklch, within: (o: Oklch) => boolean = inGamut): 
 	return { ...o, c: lo };
 }
 
-/** OKLCH → sRGB（0–1，已经编码、夹到范围里） */
+/** OKLCH → encoded sRGB, clamped to 0–1 */
 export function srgb(o: Oklch): Rgb {
 	return linear(clampChroma(o)).map((x) => Math.min(1, Math.max(0, encode(x)))) as Rgb;
 }
 
-/** sRGB 的 #rrggbb / #rrggbbaa → OKLCH（校准用：把手挑的旧色值换算过来） */
+/** #rrggbb or #rrggbbaa → OKLCH – for porting hand-picked colors */
 export function fromHex(hex: string): Oklch {
 	const n = hex.replace("#", "");
 	const v = [0, 2, 4].map((i) => decode(Number.parseInt(n.slice(i, i + 2), 16) / 255));
@@ -75,33 +75,33 @@ export function fromHex(hex: string): Oklch {
 	return alpha === undefined ? { l: L, c, h } : { l: L, c, h, alpha };
 }
 
-/** 半透明的颜色叠到底色上（在 sRGB 里混，和浏览器一样）；底色自己是不透明的 */
+/** A translucent color over an opaque one, mixed in sRGB like browsers do */
 function over(fg: Oklch, bg: Rgb): Rgb {
 	const a = fg.alpha ?? 1;
 	const f = srgb(fg);
 	return [0, 1, 2].map((i) => a * f[i] + (1 - a) * bg[i]) as Rgb;
 }
 
-/** 编码过的 sRGB（0–1）→ OKLCH */
+/** Encoded sRGB (0–1) → OKLCH */
 function fromSrgb(rgb: Rgb): Oklch {
 	const hex = rgb.map((x) => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, "0")).join("");
 	return fromHex(hex);
 }
 
-/** 半透明的层叠在不透明的 page 上，眼睛看到的那个颜色（muted 的底、diff 那一行的淡底） */
+/** The color you see when a translucent layer sits on an opaque page – muted fills, diff tints */
 export function flatten(layer: Oklch, page: Oklch): Oklch {
 	return layer.alpha === undefined || layer.alpha >= 1 ? layer : fromSrgb(over(layer, srgb(page)));
 }
 
-/** 相对亮度（WCAG 2）：sRGB 解码回线性再加权 */
+/** Relative luminance (WCAG 2): decode sRGB to linear, then weight */
 function luminanceOf(rgb: Rgb): number {
 	const [r, g, b] = rgb.map(decode);
 	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 /**
- * WCAG 2 对比度（1–21）。bg 可以是半透明的（muted、accent 这种叠在面上的层），这时给 page：它底下那层面；
- * fg 半透明就叠到（叠好的）bg 上
+ * WCAG 2 contrast, 1–21. A translucent bg (muted, accent) needs page – the surface under it.
+ * A translucent fg is laid over the flattened bg
  */
 export function contrast(fg: Oklch, bg: Oklch, page?: Oklch): number {
 	const base = bg.alpha !== undefined && bg.alpha < 1 ? over(bg, srgb(page ?? { l: 1, c: 0, h: 0 })) : srgb(bg);
@@ -111,18 +111,19 @@ export function contrast(fg: Oklch, bg: Oklch, page?: Oklch): number {
 }
 
 /**
- * 按对比度求亮度：色相、彩度照 base（放不下就降彩度），只动亮度，找到和 against 里每一个都至少 target 的、离 from 最近的那个亮度。
- * toward：往暗（浅色模式里的字）还是往亮（深色模式里的字）找。from 本身已经够了就不动
+ * Solves lightness for contrast: keeps base's hue and chroma (lowered if out of gamut) and moves only lightness, to the value
+ * nearest base that reaches target against every color in against. toward – darker for light-mode text, lighter for dark.
+ * base already passes – returned as is
  */
 export function solve(base: Oklch, target: number, against: Oklch[], toward: "darker" | "lighter"): Oklch {
 	const ok = (l: number) => against.every((bg) => contrast(clampChroma({ ...base, l }), bg) >= target);
 	if (ok(base.l)) return base;
 	let lo = toward === "darker" ? 0 : base.l;
 	let hi = toward === "darker" ? base.l : 1;
-	if (!ok(toward === "darker" ? lo : hi)) throw new Error(`达不到对比度 ${target}：${css(base)}`);
+	if (!ok(toward === "darker" ? lo : hi)) throw new Error(`Contrast ${target} is out of reach: ${css(base)}`);
 	for (let i = 0; i < 30; i++) {
 		const mid = (lo + hi) / 2;
-		// 往暗找：越暗越够，找最亮的那个够的；往亮找反过来
+		// Toward darker: darker passes more, so keep the lightest that passes; the reverse toward lighter
 		if (toward === "darker" ? ok(mid) : !ok(mid)) lo = mid;
 		else hi = mid;
 	}
@@ -131,7 +132,7 @@ export function solve(base: Oklch, target: number, against: Oklch[], toward: "da
 
 const round = (x: number, n: number) => Number(x.toFixed(n));
 
-/** 写成 CSS：oklch(0.556 0 0)、oklch(0 0 0 / 0.04)。彩度降到 P3 放得下（见开头） */
+/** As CSS: oklch(0.556 0 0), oklch(0 0 0 / 0.04). Chroma is clamped to P3 (see the top) */
 export function css(o: Oklch): string {
 	const c = clampChroma(o, inP3);
 	const body = `${round(c.l, 4)} ${round(c.c, 4)} ${round(c.c < 1e-4 ? 0 : c.h, 2)}`;

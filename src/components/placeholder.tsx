@@ -1,5 +1,5 @@
-// 一律用这里的：空状态（Placeholder，Empty：一个图标、一句话，可以加标题、下面放按钮）、加载中（Loading，居中的 Spinner）、展开收起的 ›（Chevron）。
-// 画的时候出错了也用它（Boundary）：不白屏，写明错在哪，给一个刷新。
+// The one way to draw these: empty states (Placeholder over Empty – an icon, a line, an optional title and buttons), Loading (a centered Spinner), the expand › (Chevron).
+// Render errors too (Boundary): no blank page – it says what broke and offers a reload.
 import { ChevronRight, type LucideIcon, TriangleAlert } from "lucide-react";
 import { Component, type ReactNode } from "react";
 import { Button } from "./button.tsx";
@@ -24,7 +24,7 @@ export function Placeholder({ icon: I, title, text, className, children }: { ico
 	);
 }
 
-/** 加载中：撑满外面那一层、居中一个 Spinner。className 给那一层（定高的写 h-80 之类） */
+/** Loading: fills its parent with a centered Spinner. className goes on that layer – h-80 and the like for a fixed height */
 export const Loading = ({ className }: { className?: string }) => (
 	<div className={cn("flex min-h-0 flex-1", className)}>
 		<Spinner className="m-auto text-muted-foreground" />
@@ -32,12 +32,12 @@ export const Loading = ({ className }: { className?: string }) => (
 );
 
 /**
- * 展开收起：左边一个 ›，展开时转 90°。open 不给：跟着 Radix Collapsible 的 data-state 转（不受控的 Collapsible），
- * 离它最近的 Collapsible 或 CollapsibleTrigger 上加 CHEVRON。同一个 CHEVRON 别套在另一个里面：外面的开着，里面的也会转
+ * Expand and collapse: a › on the left, turned 90° when open. Without open it follows Radix Collapsible's data-state (uncontrolled) –
+ * put CHEVRON on the nearest Collapsible or CollapsibleTrigger. Don't nest one CHEVRON in another: an open outer one turns the inner one too
  */
 /**
- * 几样次要信息排成一行（数量、用时、状态）：靠间距分开，不用「·」这类符号；空的不画。
- * 放不下时截断最后一样，前面的不缩。主次靠调用处的位置（靠右）、颜色、字重分，这里只管间距
+ * Secondary facts in a row – count, time, status – set apart by space, never by ·; empty ones are skipped.
+ * Out of room – the last one truncates, the others keep their width. Emphasis comes from the caller (placement, color, weight); this only spaces them
  */
 export function Facts({ items, className }: { items: ReactNode[]; className?: string }) {
 	const xs = items.filter((x) => x !== null && x !== undefined && x !== false && x !== "");
@@ -54,7 +54,7 @@ export const Chevron = ({ open, className }: { open?: boolean; className?: strin
 	<ChevronRight className={cn("size-3 shrink-0 text-muted-foreground transition-transform", open === undefined ? "group-data-[state=open]/chevron:rotate-90" : open && "rotate-90", className)} />
 );
 
-/** 里面画的时候抛了错：换成「出错了」和刷新。className 给出错时外面那一层（整页的要撑满） */
+/** A child threw while rendering: shows the error and a reload. className goes on the error layer – a full page needs it to fill */
 export class Boundary extends Component<{ children: ReactNode; className?: string }, { error: Error | null }> {
 	state = { error: null as Error | null };
 	static getDerivedStateFromError(error: unknown) {

@@ -1,6 +1,6 @@
-// 手机上的抽屉：左边的侧栏、右边的面板（文件、改动）。位置是一个进度 p（0 关着、1 全开）。
-// 拖的时候直接改样式跟着手指（不经过 React，每帧不重画）；松手、点按钮开关时从看到的位置动画到 0 或 1；
-// 动画途中再按住，停在看到的位置接着拖。系统开了「减少动态效果」就不播动画、直接到位
+// Phone drawers: the sidebar on the left, a panel on the right. Position is progress p – 0 closed, 1 open.
+// Dragging writes styles directly, following the finger without a React render per frame. Release or a button animates from where it is to 0 or 1;
+// grabbing mid-animation stops it where it is and drags on. Reduced motion – it jumps, no animation
 import { useEffect } from "react";
 import { standalone } from "./standalone.ts";
 
@@ -14,7 +14,7 @@ function make(side: "left" | "right") {
 	let overlay: HTMLElement | null = null;
 	let hidden: (() => void) | undefined;
 	let p = 0;
-	// 关着时在屏幕外：左边的往左藏、右边的往右藏
+	// Closed means off screen: the left drawer hides left, the right one right
 	const off = side === "left" ? -1 : 1;
 
 	function paint(ms: number) {
@@ -25,13 +25,13 @@ function make(side: "left" | "right") {
 		panel.style.transform = `translateX(${(1 - p) * off * 100}%)`;
 		overlay.style.opacity = String(p);
 		overlay.style.pointerEvents = p > 0 ? "auto" : "none";
-		// 关上的动画走完再藏起来（transitionend）；直接到位的马上藏
+		// Hide once the closing animation ends (transitionend); a jump hides at once
 		if (p > 0 || !ms) panel.style.visibility = overlay.style.visibility = p > 0 ? "visible" : "hidden";
 	}
 
 	return {
 		side,
-		/** 抽屉挂上页面时登记；onHidden：关到底、藏起来之后（里面的东西可以卸了）。返回撤销 */
+		/** Registers the mounted drawer. onHidden – fully closed and hidden, so its content can unmount. Returns undo */
 		attach(pa: HTMLElement, ov: HTMLElement, onHidden?: () => void) {
 			panel = pa;
 			overlay = ov;
@@ -48,9 +48,9 @@ function make(side: "left" | "right") {
 				if (panel === pa) panel = overlay = null;
 			};
 		},
-		/** 抽屉多宽：拖的距离换算成进度 */
+		/** Drawer width, to turn drag distance into progress */
 		width: () => panel?.getBoundingClientRect().width || 288,
-		/** 按下时：停在看到的位置（动画途中也是），返回那时的进度 */
+		/** On touch: stops where it is, mid-animation too, and returns that progress */
 		grab(): number {
 			if (!panel) return p;
 			const t = getComputedStyle(panel).transform;
@@ -58,12 +58,12 @@ function make(side: "left" | "right") {
 			paint(0);
 			return p;
 		},
-		/** 拖动中：放到 x 处，不要动画 */
+		/** While dragging: moves to x, no animation */
 		drag(x: number) {
 			p = clamp(x);
 			paint(0);
 		},
-		/** 开到底或关到底：从现在的位置动画过去，剩的距离越短越快 */
+		/** Fully open or closed: animates from here; the shorter the way, the quicker */
 		to(target: 0 | 1) {
 			if (!panel || p === target) return;
 			const ms = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : Math.round(150 + 150 * Math.abs(target - p));
@@ -78,14 +78,14 @@ export const sidebar = make("left");
 export const panel = make("right");
 
 const EDGE = 24;
-/** 松手时速度超过它（px/ms）就算甩：按甩的方向开或关 */
+/** Release faster than this (px/ms) is a fling: it opens or closes the way it was flung */
 const FLING = 0.5;
 
 /**
- * iOS 从屏幕最左边往右滑是「返回上一页」（有前进的页时最右边往左是「前进」），Safari 里和加到主屏幕的 app 里都有。
- * 主屏幕 app 里没有地址栏、用不着它：两条边 EDGE 以内一按下就拦掉，系统就不返回了。不管开着什么（对话框、菜单、面板）都拦，
- * 不跟着抽屉的手势走：抽屉的手势在开着对话框时不接，那时从边上一滑就退回上一页了。
- * 拦了 touchstart 浏览器就不再发 click，手指没动的点按自己补一个。Safari 里拦不住（系统先抢），留给系统。页面最外层调一次
+ * On iOS a swipe from the left edge goes back (and from the right edge forward), in Safari and in home-screen apps.
+ * A home-screen app has no address bar and no use for it: touches within EDGE of either edge are stopped, so the OS never goes back.
+ * Always – dialog, menu or panel open – not only when the drawer swipe would take it; that swipe ignores open dialogs, and an edge swipe there would leave the page.
+ * A stopped touchstart gets no click, so a tap that didn't move gets one dispatched. Safari takes the edge before the page can – left to the OS. Call once at the top
  */
 export function guardEdges() {
 	if (!standalone) return;
@@ -108,10 +108,10 @@ export function guardEdges() {
 	document.addEventListener("touchcancel", () => { tap = null; }, { passive: true });
 }
 
-/** 选区两头的把手画在字外面一点，离端点这么近都算按在把手上 */
+/** Selection handles sit just outside the text; a touch this close to an end counts as on the handle */
 const HANDLE = 44;
 
-/** 手指按在选中文字两头的把手附近（要拖着改范围）。输入框里的选区拿不到位置：有选中的字就算 */
+/** The finger is on a selection handle, about to resize the selection. Inputs don't expose selection rects – any selection counts */
 function onHandle(target: Element, x: number, y: number) {
 	const field = target.closest("textarea, input") as HTMLTextAreaElement | HTMLInputElement | null;
 	if (field) return field.selectionStart !== field.selectionEnd;
@@ -124,21 +124,21 @@ function onHandle(target: Element, x: number, y: number) {
 }
 
 /**
- * 横着滑开关抽屉：左边的往右滑打开、往左滑关上；右边的反过来。
- * Safari 里离那条边 EDGE 以内起手的不管，留给系统的「返回」；主屏幕 app 里边上已经拦掉了（guardEdges），从边上滑也能开。
- * 手指一动就定方向：横着的（而且是要开 / 关的方向）就拦下这次滑动，底下的内容不跟着上下滚；竖着的就放手，照常滚。
- * 开着别的对话框、菜单时不管（另一边的抽屉开着也是 role="dialog"）；按在能往那个方向滚的代码、表格上，是在滚它；
- * 在选字时也不管：按在选区两头的把手上是在改范围（onHandle），按下之后选区变了（长按选字再拖）也是
+ * Horizontal swipe for a drawer: the left one opens to the right and closes to the left; the right one mirrors it.
+ * In Safari a swipe starting within EDGE of its edge is the OS's back gesture – ignored. Home-screen apps already stopped it (guardEdges), so edges open too.
+ * Direction locks on the first move: horizontal and the right way – the swipe is taken and content doesn't scroll; vertical – let go, it scrolls.
+ * Ignored while another dialog or menu is open (the other drawer is role="dialog" too), on code or tables that scroll that way,
+ * and while selecting text: on a selection handle (onHandle), or when the selection changes after touch-down (long-press, then drag)
  */
 export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean; setOpen: (open: boolean) => void; onStart?: () => void }) {
 	useEffect(() => {
-		// 往哪边滑是打开：左边的抽屉往右（+1），右边的往左（-1）
+		// The opening direction: right (+1) for the left drawer, left (-1) for the right one
 		const opening = d.side === "left" ? 1 : -1;
-		// from：按下时抽屉开到哪（动画途中按住的，停在看到的位置）；pts：最近的手指位置，松手时算速度
+		// from – progress at touch-down (where it stopped, if mid-animation); pts – recent finger positions, for release velocity
 		let g: { x: number; y: number; dir: "h" | null; track: boolean; from: number; w: number; pts: [number, number][] } | null = null;
-		/** 没拖成（竖着滑、反方向、取消）：按下时停住的动画接着走完 */
+		/** No drag after all (vertical, wrong way, cancelled): the animation stopped at touch-down finishes */
 		const settle = () => d.to(open ? 1 : 0);
-		/** el 能不能顺着手指往 sign 那边滑的方向滚（手指往右滑，内容往左滚回去） */
+		/** Whether el scrolls with a finger moving toward sign – a finger moving right scrolls content back left */
 		const scrolls = (el: Element, sign: number) => {
 			if (sign > 0) return el.scrollLeft > 0;
 			if (el.scrollWidth - el.clientWidth - el.scrollLeft < 1) return false;
@@ -148,7 +148,7 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 		const down = (e: TouchEvent) => {
 			g = null;
 			if (e.touches.length !== 1) return;
-			// 长按出来的菜单、要确认的对话框开着时也不管
+			// Also ignored with a long-press menu or a confirm dialog open
 			if (document.querySelector(`[role="dialog"]:not([data-drawer="${d.side}"]), [role="menu"], [role="alertdialog"]`)) return;
 			const t = e.touches[0];
 			const edge = d.side === "left" ? t.clientX < EDGE : t.clientX > innerWidth - EDGE;
@@ -164,13 +164,13 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 			const dx = t.clientX - g.x;
 			const dy = t.clientY - g.y;
 			if (!g.dir) {
-				// 按住不动到菜单出来（长按）再挪手指：是在菜单上，不是开关抽屉
+				// Held until a menu opened (long-press), then moved: that's the menu, not the drawer
 				if (document.querySelector('[role="menu"]')) {
 					g.track = false;
 					return settle();
 				}
 				if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
-				// 竖着为主，或者横着但不是要的方向：不管这次了
+				// Mostly vertical, or horizontal the wrong way: not ours
 				if (Math.abs(dy) >= Math.abs(dx) || (dx * opening > 0) === open) {
 					g.track = false;
 					return settle();
@@ -179,7 +179,7 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 				if (!open) onStart?.();
 			}
 			if (e.cancelable) e.preventDefault();
-			// 跟手：抽屉的边贴着手指走
+			// Follow the finger: the drawer's edge stays under it
 			d.drag(g.from + (dx * opening) / g.w);
 			g.pts.push([e.timeStamp, t.clientX]);
 			if (g.pts.length > 8) g.pts.shift();
@@ -191,7 +191,7 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 			const { dir, track, from, w, pts } = g;
 			g = null;
 			if (dir) {
-				// 甩得够快就按甩的方向，不然看拉开了没有一半
+				// A fast enough fling wins; otherwise past halfway opens
 				const [t0, x0] = pts.find(([at]) => e.timeStamp - at <= 100) ?? pts[pts.length - 1];
 				const v = e.timeStamp > t0 ? ((t.clientX - x0) * opening) / (e.timeStamp - t0) : 0;
 				const next = v > FLING ? true : v < -FLING ? false : from + (dx * opening) / w > 0.5;
@@ -199,7 +199,7 @@ export function useSwipe(d: Drawer, { open, setOpen, onStart }: { open: boolean;
 				if (next !== open) setOpen(next);
 			} else if (track) settle();
 		};
-		// 按着的时候选区变了、选出了字：长按选字，或者在拖把手。抽屉还没跟着动就放手
+		// The selection changed mid-touch – a long-press select or a handle drag. Let go if the drawer hasn't moved yet
 		const select = () => {
 			if (!g?.track || g.dir || getSelection()?.isCollapsed !== false) return;
 			g.track = false;

@@ -1,8 +1,8 @@
-// 运行时套用户自己的主题、切深浅色。内置主题直接写 data-theme。
+// Runtime: apply a custom theme, switch modes. Built-in themes need only data-theme.
 import { variables } from "./css.ts";
 import type { ThemeInput } from "./roles.ts";
 
-/** 把一套主题的变量写在 el 的行内样式上（盖过 data-theme 的那套），返回撤销 */
+/** Writes a theme's variables inline on el, over any data-theme. Returns undo */
 export function applyTheme(theme: ThemeInput, el: HTMLElement = document.documentElement): () => void {
 	const vars = variables(theme);
 	const old = Object.keys(vars).map((k) => [k, el.style.getPropertyValue(k)] as const);
@@ -18,8 +18,8 @@ export function applyTheme(theme: ThemeInput, el: HTMLElement = document.documen
 export type ModePreference = "light" | "dark" | "system";
 
 /**
- * 深浅色：light / dark 写死，system 跟着系统（系统变了也跟着）。在 el 上加 .dark 或 .light（Tailwind 的 dark: 要 class），
- * 返回撤销（system 的也停止跟随）
+ * Mode: light and dark are fixed; system follows the OS, live. Sets .dark or .light on el – Tailwind's dark: needs the class.
+ * Returns undo, which also stops following the OS
  */
 export function applyMode(pref: ModePreference, el: HTMLElement = document.documentElement): () => void {
 	const media = matchMedia("(prefers-color-scheme: dark)");
