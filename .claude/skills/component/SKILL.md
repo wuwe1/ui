@@ -1,39 +1,40 @@
 ---
 name: component
-description: Build a new component in @wuwe1/ui, or move one in from a project. Spec first, then every state on the showcase, then keys, screen reader, motion, both modes and phone width, then wire it into the project.
+description: Build a component in @wuwe1/ui – usually one affectUI has. Don't copy it: understand it, redesign it our way, propose, build, show the real thing in a mixer block, and commit only after the user says yes.
 ---
 
 # Build a component
 
-The bars: `docs/principles.md`, `docs/theme.md`, `docs/writing.md`. Finish each step before the next.
+Understand, redesign, then build – never copy. The bars: `docs/principles.md`, `docs/theme.md`, `docs/writing.md`. Finish each step before the next.
 
-## 1. What it does
+## 1. Understand
 
-- One or two sentences
-- affectUI has a counterpart – study its page first: screenshots in both modes on phone and desktop, and the CSS variables on its elements. Learn the design; never copy the source
-- Moving one in from a project – list every case it handles today; none may be lost
+- affectUI has it – open its page when you get to it, one page at a time; its terms forbid scraping. Look at the result, never the code
+- Screenshot every state in both modes, phone and desktop; read When to use, API, Keyboard, Accessibility, Motion
+- Say in one or two sentences what job it does
+- A project already has its own – list every case it handles; none may be lost
 
-## 2. Spec
+## 2. Redesign
 
-Write `docs/components/<file>.md` before any code, sections in the order `docs/principles.md` gives. States must be complete.
+- Keep what serves the job; change what clashes with our rules: no spinner next to text, one accent color, status dots in lists, Chinese UI copy
+- One style – the theme does the rest
+- Fit agent work: dozens of items mean lines, not cards
 
-## 3. API
+## 3. Propose
 
-- Props in, callbacks out; no fetching, no global state
-- Loading and empty are the component's job: `items={null}` is loading, `empty` is what shows when there's nothing
-- Pure logic goes in `src/lib/<name>.ts`, tested in `test/<name>.test.ts`
+- A table per component, affectUI against ours: what we keep, adopt, make optional, skip – and why
+- Wait for the user's go
 
 ## 4. Build
 
-- Tokens only; a signal as text is `-strong`
-- Keys, screen reader and motion per `docs/principles.md`
-- The file's first comment: what it is, and why it's built this way – a line or two
+- The spec first: `docs/components/<file>.md`, sections in the order `docs/principles.md` gives, every state
+- Props in, callbacks out; no fetching, no global state. Loading and empty are the component's job
+- Pure logic in `src/lib/<name>.ts`, tested in `test/<name>.test.ts`
+- Tokens only; a signal as text is `-strong`. Keys, screen reader and motion per `docs/principles.md`
+- The file's first comment: what it is, and why it's built this way
+- Showcase: one story per state in `showcase/stories.tsx`, data that looks real, the page in a `NAV` group
 
-## 5. Showcase
-
-Add it to `showcase/stories.tsx`, one story per state, with data that looks real. `pnpm dev`, then flip modes and widths through each one.
-
-## 6. Check
+## 5. Check
 
 - `pnpm check`, `pnpm test`, `pnpm build`
 - Screenshots: every state × phone 390 and desktop × both modes. Open one directly: `/?p=<Component>&s=<State>&mode=dark&w=390&bare=1`
@@ -41,13 +42,19 @@ Add it to `showcase/stories.tsx`, one story per state, with data that looks real
 - Playwright isn't a dependency: `npm i playwright-core` in `/tmp/pw`, then `npx playwright-core install webkit`. Use WebKit – the iPhone's engine
 - An element taller than the viewport – enlarge the viewport; stitched scrolling screenshots distort
 - Walk the keys: Tab order, `Enter`, `Esc`, focus rings
-- Once more with `page.emulateMedia({ reducedMotion: "reduce" })`
+- Once more with `reducedMotion: "reduce"`
 - Stop servers by PID; screenshots go in `/tmp`
 
-## 7. Wire it into the project
+## 6. Show it in a block
 
-Import `@wuwe1/ui/<file>`, write the layer that feeds it data, delete the project's copy, update the project's docs.
+The user reviews in mixer, often on a phone.
 
-## 8. Commit
+- Write a ```block that imports the real component – `import { X } from "@wuwe1/ui/<file>"` – with every state, live where it can be (clicks that settle after a second), and a 跟随 / 浅色 / 深色 toggle that sets the block page's class
+- The user's computer has reduced motion on: when `matchMedia("(prefers-reduced-motion: reduce)")` matches, show a note and 「在这里照常播放」, which adds a class whose CSS replays the component's motion with `!important`
+- Try it first: build mixer, start `HOME=<tmp> MIXER_DATA=<tmp> MIXER_PORT=5859 node server/main.ts` with a session file under `<tmp>/.claude/projects/` holding the block, open it in WebKit, click through, stop it by PID
+- Point out what changed against affectUI and against the project's old version
 
-One commit in ui, one in the project. The first line says what changed; below it, where it was checked.
+## 7. Commit after a yes
+
+- ui: commit and push. The first line says what changed; below it, where it was checked
+- Then wire the project to it: import `@wuwe1/ui/<file>`, keep only the data layer, delete the project's copy, update the project's docs. Commit in the project; push when asked

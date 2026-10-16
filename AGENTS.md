@@ -29,7 +29,7 @@ Each file says what it does in its first comment.
 - Components use tokens only; a signal color used as text is `-strong`
 - Components take data, not services: props in, callbacks out
 - Build components with `.claude/skills/component/SKILL.md`
-- Learn affectUI's finish; never copy its source
+- affectUI: look at its pages, never its code – understand, redesign, propose, then build (`.claude/skills/component`)
 - Commit on main
 
 ## Writing AGENTS.md
