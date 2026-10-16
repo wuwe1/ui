@@ -1,0 +1,33 @@
+/*
+ * 每页都要的底。深浅色看 color-scheme（tokens.css 的 light-dark() 照它取值）：
+ *   什么都不写跟着系统，一行 JS 都不用、也不会先白一下；.dark / .light 套在哪一块，那一块就固定成深 / 浅（apply.ts 的 applyMode 帮着加）。
+ *   Tailwind 的 dark: 认的是 .dark 这个 class（theme.css），所以用到 dark: 的页面要让 applyMode 加上 class
+ * 边框默认用 border 色，正文的底和字，能点的东西是手指。
+ */
+:root {
+	color-scheme: light dark;
+}
+.light {
+	color-scheme: light;
+}
+.dark {
+	color-scheme: dark;
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		@apply font-sans;
+		/* iOS 横屏时不自己放大字 */
+		-webkit-text-size-adjust: 100%;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+	button:not(:disabled),
+	[role="button"]:not(:disabled) {
+		cursor: pointer;
+	}
+}

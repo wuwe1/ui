@@ -1,0 +1,14 @@
+/*
+ * 用 @wuwe1/ui 的项目在自己的 CSS 里写：
+ *   @import "tailwindcss";
+ *   @import "@wuwe1/ui/styles.css";
+ * 这里带上主题（token 的值、Tailwind 的名字、variant）、每页都要的底、动画，并让 Tailwind 去扫库里的组件（@source，路径照这个文件算）。
+ * 字体另外引（@fontsource-variable/geist），见 README
+ */
+@import "tw-animate-css";
+@import "./theme/variants.css";
+@import "./theme/theme.css";
+@import "./theme/tokens.css";
+@import "./theme/base.css";
+
+@source "./components";
