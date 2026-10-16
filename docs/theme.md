@@ -19,7 +19,7 @@ Components use only the last layer: `bg-background`, `text-muted-foreground`, `t
 
 ## How colors are derived
 
-- Surfaces – fixed lightness steps: `sidebar` < `background` < `card`
+- Surfaces – fixed lightness steps: `sidebar` < `background` < `card`; `raised` – a pill on a `muted` track – is white like a card in light, a step above the track in dark
 - Text – muted text and every `*-strong` are solved for contrast: only lightness moves in OKLCH, until every surface gives 4.5:1
 - Layers – `muted` and `accent` are translucent black or white, so they show on any surface
 - Signals – three shades: solid for dots and icons, `-strong` for text, `-subtle` for tints

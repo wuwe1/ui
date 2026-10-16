@@ -18,7 +18,7 @@ How the next message runs – model, thinking effort, permission – behind one 
 - Chip – a sliders icon, the summary (the main pick, the rest muted, no separators), a chevron
 - Panel – a popover above the chip on desktop, a sheet on phones; no title bar
 - List section – a label, one option per line with a description, a check on the pick; rarer options under 「更多版本」, open by itself when one of them is picked
-- Segmented section – a label, a row of choices, the pick's description under it
+- Segmented section – a label, a `SegmentedControl` across the panel, the pick's description under it
 
 ## States
 
@@ -50,7 +50,7 @@ How the next message runs – model, thinking effort, permission – behind one 
 ## Accessibility
 
 - A list is a `radiogroup` with one tab stop – the pick; each line is a `radio`
-- A segmented row is a toggle group named by its section
+- A segmented row is a `SegmentedControl` – a radiogroup named by its section
 - 「更多版本」 is a button with `aria-expanded`
 
 ## Motion

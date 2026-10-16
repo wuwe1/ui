@@ -5,7 +5,7 @@ import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { StatusIcon } from "../src/components/status-icon.tsx";
 import { toast } from "../src/components/toast.tsx";
-import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
+import { SegmentedControl } from "../src/components/segmented-control.tsx";
 import { cn } from "../src/lib/utils.ts";
 import { base, contrast, flatten, type Mode, type Role, roles, SIGNALS, THEMES, type ThemeInput, type Tint, variables } from "../src/theme/index.ts";
 
@@ -46,9 +46,7 @@ export function ThemePage() {
 					<span className="text-sm font-medium">Knobs</span>
 					<span className="text-xs text-muted-foreground">Turn these; every other color follows</span>
 					<span className="ml-auto" />
-					<ToggleGroup type="single" variant="outline" size="sm" value={from} onValueChange={(v) => v && reset(v)}>
-						{THEMES.map((t) => <ToggleGroupItem key={t.name} value={t.name}>From {t.name}</ToggleGroupItem>)}
-					</ToggleGroup>
+					<SegmentedControl size="sm" aria-label="Start from" value={from} onChange={reset} options={THEMES.map((t) => ({ value: t.name, label: `From ${t.name}` }))} />
 					<Button variant="outline" size="sm" onClick={() => reset(from)}><RotateCcw />Reset</Button>
 					<Button size="sm" onClick={copy}><Copy />Copy</Button>
 				</div>

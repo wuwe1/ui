@@ -1,5 +1,5 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { AppWindow, Bell, CircleAlert, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
+import { AppWindow, Bell, MoveUpRight, CircleAlert, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
 import { type ReactNode, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
@@ -23,6 +23,7 @@ import { NotificationStack, type Notice } from "../src/components/notification-s
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
 import { Popsheet } from "../src/components/popsheet.tsx";
+import { type SegmentOption, SegmentedControl } from "../src/components/segmented-control.tsx";
 import { Shimmer } from "../src/components/shimmer.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
 import { Spinner } from "../src/components/spinner.tsx";
@@ -45,7 +46,7 @@ export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
-	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
+	{ label: "Base", pages: ["Button", "Badge", "Input", "SegmentedControl", "Tabs", "Card", "Alert", "Feedback"] },
 ];
 
 const row = "flex flex-wrap items-center gap-2";
@@ -56,6 +57,18 @@ const SIZES = ["xs", "sm", "default", "lg"] as const;
 const MARKS: Mark[] = ["waiting", "running", "background", "done", "error", "terminal", "ok", "failed", "off"];
 
 export const STORIES: Record<string, Story[]> = {
+	SegmentedControl: [
+		{ name: "Default", render: () => <Seg options={VIEWS} /> },
+		{ name: "With icons", render: () => <Seg options={TOOLS} /> },
+		{ name: "With counts", render: () => <SegCounts /> },
+		{ name: "Sizes", render: () => <div className={col}><Seg size="sm" options={VIEWS} /><Seg options={VIEWS} /></div> },
+		{ name: "Full width", render: () => <SegFull /> },
+		{ name: "Disabled", render: () => <div className={col}><Seg options={[...VIEWS.slice(0, 2), { ...VIEWS[2]!, disabled: true }]} /><Seg options={VIEWS} disabled /></div> },
+		{ name: "Tabs", render: () => <SegTabs /> },
+		{ name: "Too many to fit", render: () => <div className="w-[240px]"><Seg size="sm" options={SEG_GROUPS} /></div> },
+		{ name: "Dimmed", render: () => <Seg size="sm" options={SEG_GROUPS.map((g) => (g.count === 0 ? { ...g, dim: true } : g))} /> },
+		{ name: "Nothing picked", render: () => <Seg options={VIEWS} start="" /> },
+	],
 	Button: [
 		{ name: "Variants", render: () => <div className={row}>{VARIANTS.map((v) => <Button key={v} variant={v}>{v}</Button>)}</div> },
 		{ name: "Sizes", render: () => <div className={row}>{SIZES.map((s) => <Button key={s} size={s}><Plus />{s}</Button>)}</div> },
@@ -732,6 +745,55 @@ function Doc({ n, long }: { n: number; long?: boolean }) {
 				))}
 			</div>
 			{n >= 2 && <Outline items={Array.from({ length: n }, (_, i) => ({ id: String(i), label: label(i) }))} view={view} onJump={jump} title="目录" description={`你的 ${n} 条消息`} scroller={box} className="absolute top-2 right-0 bottom-2" />}
+		</div>
+	);
+}
+
+/** SegmentedControl as hosts use it: the pick lives with the host */
+const VIEWS: SegmentOption[] = [{ value: "preview", label: "预览" }, { value: "source", label: "源码" }, { value: "diff", label: "改动" }];
+const TOOLS: SegmentOption[] = [{ value: "arrow", label: "箭头", icon: MoveUpRight }, { value: "pen", label: "画笔", icon: Pencil }];
+const SEG_GROUPS: SegmentOption[] = [["all", "全部", 12], ["user", "user", 3], ["feedback", "feedback", 5], ["project", "project", 4], ["reference", "reference", 0]].map(([value, label, count]) => ({ value: String(value), label: String(label), count: Number(count) }));
+
+function Seg({ options, size, disabled, start }: { options: SegmentOption[]; size?: "sm" | "md"; disabled?: boolean; start?: string }) {
+	const [v, setV] = useState(start ?? options[1]?.value ?? "");
+	return <SegmentedControl aria-label="查看方式" size={size} options={options} value={v} onChange={setV} disabled={disabled} />;
+}
+
+/** A count that changes: the option widens and the pill follows at once */
+function SegCounts() {
+	const [v, setV] = useState("changes");
+	const [n, setN] = useState(3);
+	const panels: SegmentOption[] = [{ value: "files", label: "文件" }, { value: "changes", label: "改动", count: n, title: `这个会话有 ${n} 个文件未提交` }, { value: "memory", label: "Memory" }, { value: "exploit", label: "exploit", count: 4 }];
+	return (
+		<div className={row}>
+			<SegmentedControl size="sm" kind="tabs" aria-label="面板" options={panels} value={v} onChange={setV} />
+			<Button variant="ghost" size="xs" onClick={() => setN((x) => (x >= 120 ? 1 : x * 7))}>改动数变了</Button>
+		</div>
+	);
+}
+
+/** Thinking effort in a settings panel: equal segments, the pick's description under it */
+function SegFull() {
+	const opts: SegmentOption[] = [{ value: "default", label: "默认", title: "用 Claude Code 的设置" }, { value: "low", label: "低" }, { value: "medium", label: "中" }, { value: "high", label: "高" }, { value: "xhigh", label: "很高" }, { value: "max", label: "最高" }];
+	const [v, setV] = useState("default");
+	return (
+		<div className="flex w-[300px] flex-col gap-1.5 rounded-xl border bg-popover p-3">
+			<span className="text-xs text-muted-foreground">思考强度</span>
+			<SegmentedControl fullWidth aria-label="思考强度" options={opts} value={v} onChange={setV} />
+			{v === "default" && <span className="px-1 text-xs text-muted-foreground">用 Claude Code 的设置</span>}
+		</div>
+	);
+}
+
+/** kind="tabs": each option controls a panel, and the panel names itself after its tab */
+function SegTabs() {
+	const [v, setV] = useState("files");
+	return (
+		<div className={col}>
+			<SegmentedControl kind="tabs" id="story-tabs" aria-label="项目" value={v} onChange={setV} options={[{ value: "files", label: "文件", controls: "story-tabs-files-panel" }, { value: "changes", label: "改动", count: 3, controls: "story-tabs-changes-panel" }]} />
+			<div role="tabpanel" id={`story-tabs-${v}-panel`} aria-labelledby={`story-tabs-${v}`} className="rounded-lg border p-3 text-sm text-muted-foreground">
+				{v === "files" ? "文件列表" : "改动列表"}
+			</div>
 		</div>
 	);
 }

@@ -13,6 +13,7 @@
 	--color-sidebar: var(--sidebar);
 	--color-background: var(--background);
 	--color-card: var(--card);
+	--color-raised: var(--raised);
 	--color-popover: var(--popover);
 	--color-foreground: var(--foreground);
 	--color-card-foreground: var(--card-foreground);

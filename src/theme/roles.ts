@@ -25,10 +25,13 @@ export type ThemeInput = {
 	radius: number;
 };
 
-/** Surface lightness, rising from the outside in: sidebar outermost, background the content panel, card and popover on top */
-const SURFACE: Record<Mode, { sidebar: number; background: number; card: number; border: number; input: number; sidebarBorder: number; foreground: number; primary: number; ring: number }> = {
-	light: { sidebar: 0.9702, background: 0.9911, card: 1, border: 0.9219, input: 0.9219, sidebarBorder: 0.9219, foreground: 0.1448, primary: 0.2046, ring: 0.708 },
-	dark: { sidebar: 0.1548, background: 0.1826, card: 0.2143, border: 0.2694, input: 0.302, sidebarBorder: 0.2401, foreground: 0.9461, primary: 0.9461, ring: 0.556 },
+/**
+ * Surface lightness, rising from the outside in: sidebar outermost, background the content panel, card and popover on top.
+ * raised – what sits up on a muted track, a segmented control's pill: white like a card in light, a step above the track in dark
+ */
+const SURFACE: Record<Mode, { sidebar: number; background: number; card: number; raised: number; border: number; input: number; sidebarBorder: number; foreground: number; primary: number; ring: number }> = {
+	light: { sidebar: 0.9702, background: 0.9911, card: 1, raised: 1, border: 0.9219, input: 0.9219, sidebarBorder: 0.9219, foreground: 0.1448, primary: 0.2046, ring: 0.708 },
+	dark: { sidebar: 0.1548, background: 0.1826, card: 0.2143, raised: 0.285, border: 0.2694, input: 0.302, sidebarBorder: 0.2401, foreground: 0.9461, primary: 0.9461, ring: 0.556 },
 };
 /** Translucent layers – black in light mode, white in dark – so they show on any surface. muted and secondary inset, accent hovers */
 const OVERLAY: Record<Mode, { muted: number; accent: number }> = { light: { muted: 0.039, accent: 0.051 }, dark: { muted: 0.051, accent: 0.071 } };
@@ -50,18 +53,19 @@ export function roles(theme: ThemeInput): Role[] {
 	const by = (f: (mode: Mode) => Oklch): Record<Mode, Oklch> => ({ light: f("light"), dark: f("dark") });
 	const s = (mode: Mode) => SURFACE[mode];
 	const n = (mode: Mode, l: number) => gray(theme.neutral[mode], l);
-	const surfaces = (mode: Mode) => [n(mode, s(mode).background), n(mode, s(mode).card), n(mode, s(mode).sidebar)];
+	const surfaces = (mode: Mode) => [n(mode, s(mode).background), n(mode, s(mode).card), n(mode, s(mode).sidebar), n(mode, s(mode).raised)];
 	/** muted over background – code and badge fills; muted text must read on it too */
 	const mutedBg = (mode: Mode) => flatten(gray(theme.neutral[mode], ink(mode), OVERLAY[mode].muted), n(mode, s(mode).background));
 	const away = (mode: Mode) => (mode === "light" ? "darker" : "lighter");
 	const ink = (mode: Mode) => (mode === "light" ? 0 : 1);
-	const SURFACES = ["background", "card", "popover", "sidebar"];
+	const SURFACES = ["background", "card", "popover", "sidebar", "raised"];
 
 	const list: Role[] = [
 		{ name: "sidebar", doc: "Outermost surface – the sidebar", value: by((m) => n(m, s(m).sidebar)) },
 		{ name: "background", doc: "Content panel", value: by((m) => n(m, s(m).background)) },
 		{ name: "card", doc: "Cards", value: by((m) => n(m, s(m).card)) },
 		{ name: "popover", doc: "Menus, popovers, dialogs", value: by((m) => n(m, s(m).card)) },
+		{ name: "raised", doc: "Raised on a muted track – a segmented control's pill", value: by((m) => n(m, s(m).raised)) },
 		{ name: "foreground", doc: "Body text", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, SURFACES] },
 		{ name: "card-foreground", doc: "Text on cards", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["card"]] },
 		{ name: "popover-foreground", doc: "Text on popovers", value: by((m) => n(m, s(m).foreground)), needs: [TEXT.strong, ["popover"]] },

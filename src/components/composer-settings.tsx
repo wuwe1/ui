@@ -7,7 +7,7 @@ import { type KeyboardEvent, type ReactNode, useRef, useState } from "react";
 import { Badge } from "./badge.tsx";
 import { Button } from "./button.tsx";
 import { Popsheet } from "./popsheet.tsx";
-import { ToggleGroup, ToggleGroupItem } from "./toggle-group.tsx";
+import { SegmentedControl } from "./segmented-control.tsx";
 import { cn } from "../lib/utils.ts";
 
 export type SettingsOption = { value: string; label: string; description?: string; icon?: LucideIcon; badge?: string };
@@ -130,17 +130,7 @@ function Segmented({ s }: { s: Extract<SettingsSection, { kind: "segmented" }> }
 	const cur = s.options.find((o) => o.value === s.value);
 	return (
 		<>
-			<ToggleGroup type="single" variant="outline" size="sm" value={s.value} onValueChange={(v) => v && s.onChange(v)} aria-label={s.label} className="w-full">
-				{s.options.map((o) => {
-					const I = o.icon;
-					return (
-						<ToggleGroupItem key={o.value} value={o.value} title={o.description} className="min-w-0 flex-1 gap-1 px-1.5 text-xs pointer-coarse:h-10">
-							{I && <I className="size-3.5 shrink-0" aria-hidden />}
-							<span className="truncate">{o.label}</span>
-						</ToggleGroupItem>
-					);
-				})}
-			</ToggleGroup>
+			<SegmentedControl fullWidth aria-label={s.label} value={s.value} onChange={s.onChange} options={s.options.map((o) => ({ value: o.value, label: o.label, icon: o.icon, title: o.description }))} />
 			{cur?.description && <span className="px-1 text-xs text-muted-foreground">{cur.description}</span>}
 		</>
 	);

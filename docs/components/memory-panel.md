@@ -17,7 +17,7 @@ What an agent remembers across sessions, grouped and editable – a master switc
 ## Anatomy
 
 - Head – the title and the count; 「使用 memory」, a switch. Off – a note unfolds under the head and the list dims
-- Chips – 「全部」 and each group with its count, a radiogroup; the search button swaps them for a search field
+- Chips – a `SegmentedControl`: 「全部」 and each group with its count; an empty group is quieter; the search button swaps them for a search field
 - Groups – fixed, from the host, in its order. Under 「全部」 each group is a section with its label; filtered, the rows only
 - Row – the text; under it the source (a link with `onSource`), the date, 「已暂停」; actions – edit, pause or resume, forget – on hover and focus, always on touch. A row with a detail opens to it, drawn by `renderDetail`
 - Editor – in place of the row: the text, the detail if the memory has one, the group chips, 「取消」「保存」
@@ -80,7 +80,7 @@ What an agent remembers across sessions, grouped and editable – a master switc
 ## Responsive behavior
 
 - Fills its container; works from 300px
-- Below 340px the chips drop their counts; below 320px the switch keeps only its track
+- Below 320px the switch keeps only its track
 - Touch: actions always visible, buttons and chips get taller hit areas
 - Chips that don't fit scroll sideways: swipe, drag with a mouse, or turn the wheel; a drag doesn't pick the chip it ends on, and a picked chip scrolls fully into view
 

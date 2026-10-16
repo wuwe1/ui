@@ -7,9 +7,8 @@ import { Outline, useInView } from "../src/components/outline.tsx";
 import { createRoot } from "react-dom/client";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger, useSidebar } from "../src/components/sidebar.tsx";
 import { Toaster } from "../src/components/toast.tsx";
-import { ToggleGroup, ToggleGroupItem } from "../src/components/toggle-group.tsx";
+import { SegmentedControl } from "../src/components/segmented-control.tsx";
 import { TooltipProvider } from "../src/components/tooltip.tsx";
-import { cn } from "../src/lib/utils.ts";
 import { applyMode } from "../src/theme/index.ts";
 import { Docs, DocsToggle, useDocs } from "./docs.tsx";
 import { NAV, STORIES } from "./stories.tsx";
@@ -81,8 +80,8 @@ function Showcase() {
 						<SidebarTrigger className="-ml-1" />
 						<span className="truncate text-sm font-medium">{p}</span>
 						<span className="ml-auto" />
-						<Pick value={mode} onChange={setMode} options={[["light", "Light"], ["dark", "Dark"]]} />
-						{p !== THEME_PAGE && <Pick value={w} onChange={setW} options={WIDTHS} className="hidden sm:flex" />}
+						<Pick label="Mode" value={mode} onChange={setMode} options={[["light", "Light"], ["dark", "Dark"]]} />
+						{p !== THEME_PAGE && <Pick label="Width" value={w} onChange={setW} options={WIDTHS} className="hidden sm:block" />}
 						{p !== THEME_PAGE && <DocsToggle open={docs.open} onOpenChange={docs.setOpen} />}
 					</div>
 				</header>
@@ -130,12 +129,8 @@ function Nav({ page, onPick }: { page: string; onPick: (p: string) => void }) {
 	);
 }
 
-function Pick({ value, onChange, options, className }: { value: string; onChange: (v: string) => void; options: readonly (readonly [string, string])[]; className?: string }) {
-	return (
-		<ToggleGroup type="single" variant="outline" size="sm" value={value} onValueChange={(v) => v && onChange(v)} className={cn("flex-wrap", className)}>
-			{options.map(([v, label]) => <ToggleGroupItem key={v} value={v}>{label}</ToggleGroupItem>)}
-		</ToggleGroup>
-	);
+function Pick({ value, onChange, options, className, label }: { value: string; onChange: (v: string) => void; options: readonly (readonly [string, string])[]; className?: string; label: string }) {
+	return <SegmentedControl size="sm" aria-label={label} value={value} onChange={onChange} options={options.map(([v, l]) => ({ value: v, label: l }))} className={className} />;
 }
 
 /** One state: its name and 「只看这个」 (or 「看全部」 when it's alone), then a frame on the content surface (background) at the picked width */

@@ -1,4 +1,4 @@
-// MemoryPanel: what an agent remembers – a master switch, group chips and a search, and on every memory edit in place, pause or forget with Undo on the tray.
+// MemoryPanel: what an agent remembers – a master switch, group chips (a SegmentedControl) and a search, and on every memory edit in place, pause or forget with Undo on the tray.
 // Groups are fixed and come from the host – an agent files its own memories, so the groups follow its fields, not a taxonomy someone keeps by hand.
 // A row opens to its detail; the host draws it (markdown, say). Props in, callbacks out; the list shown is always the one passed in.
 import { ChevronRight, Pause, Pencil, Play, Plus, Search, Trash2, Undo2, X } from "lucide-react";
@@ -6,11 +6,10 @@ import { type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from 
 import { Badge } from "./badge.tsx";
 import { Button } from "./button.tsx";
 import { Input } from "./input.tsx";
+import { SegmentedControl } from "./segmented-control.tsx";
 import { Skeleton } from "./skeleton.tsx";
 import { Textarea } from "./textarea.tsx";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip.tsx";
-import { useDragScroll } from "../hooks/use-drag-scroll.ts";
-import { step } from "../lib/roving.ts";
 import { counts, type MemoryGroup, type MemoryItem, short, trayLine, visible } from "../lib/memory-panel.ts";
 import { cn } from "../lib/utils.ts";
 
@@ -78,48 +77,17 @@ function Act({ icon: I, label, onClick, danger }: { icon: typeof Pencil; label: 
 	);
 }
 
-/** A fade on each end that hides more chips */
-const fade = ({ start, end }: { start: boolean; end: boolean }) =>
-	start || end ? `linear-gradient(to right, ${start ? "transparent, black 24px" : "black"}, ${end ? "black calc(100% - 24px), transparent" : "black"})` : undefined;
-
-/** Group chips: a radiogroup, arrows move, one tab stop. Too many for the width – they scroll: swipe, drag with a mouse, or turn the wheel */
+/** Group chips: a SegmentedControl – arrows pick, one tab stop; too many for the width and it scrolls. An empty group is quieter */
 function Chips({ groups, value, onChange, count, label }: { groups: { id: string; label: string }[]; value: string; onChange: (id: string) => void; count?: Record<string, number>; label: string }) {
-	const ref = useRef<HTMLDivElement>(null);
-	const more = useDragScroll(ref);
-	const key = (e: KeyboardEvent<HTMLDivElement>) => {
-		const i = groups.findIndex((g) => g.id === value);
-		const n = step(e.key === "ArrowDown" ? "ArrowRight" : e.key === "ArrowUp" ? "ArrowLeft" : e.key, i, groups.length);
-		if (n === null) return;
-		e.preventDefault();
-		const g = groups[n];
-		if (!g) return;
-		onChange(g.id);
-		ref.current?.querySelectorAll<HTMLElement>("[role=radio]")[n]?.focus();
-	};
 	return (
-		<div ref={ref} role="radiogroup" aria-label={label} onKeyDown={key} style={{ maskImage: fade(more) }} className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto overscroll-x-contain">
-			{groups.map((g) => (
-				<button
-					key={g.id}
-					type="button"
-					role="radio"
-					aria-checked={g.id === value}
-					tabIndex={g.id === value ? 0 : -1}
-					onClick={(e) => {
-						onChange(g.id);
-						e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" });
-					}}
-					className={cn(
-						"flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 pointer-coarse:h-9",
-						g.id === value ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-						count && !count[g.id] && g.id !== value && "opacity-60",
-					)}
-				>
-					{g.label}
-					{count && <span className="text-muted-foreground tabular-nums max-[340px]:hidden">{count[g.id] ?? 0}</span>}
-				</button>
-			))}
-		</div>
+		<SegmentedControl
+			size="sm"
+			aria-label={label}
+			value={value}
+			onChange={onChange}
+			className="min-w-0"
+			options={groups.map((g) => ({ value: g.id, label: g.label, count: count ? (count[g.id] ?? 0) : undefined, dim: !!count && !count[g.id] }))}
+		/>
 	);
 }
 
@@ -282,7 +250,7 @@ function MemoryPanel(props: Props) {
 					) : (
 						<>
 							<Chips groups={chips} value={group} onChange={setGroup} count={c} label="按分组看" />
-							<Button size="icon-xs" variant="ghost" className="shrink-0 text-muted-foreground" aria-label="搜索 memory" onClick={() => setSearching(true)}><Search /></Button>
+							<Button size="icon-xs" variant="ghost" className="ml-auto shrink-0 text-muted-foreground" aria-label="搜索 memory" onClick={() => setSearching(true)}><Search /></Button>
 						</>
 					)}
 				</div>
