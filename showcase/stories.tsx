@@ -1,6 +1,6 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
 import { AppWindow, Bell, MoveUpRight, CircleAlert, FileText, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
 import { Badge } from "../src/components/badge.tsx";
@@ -15,6 +15,7 @@ import { Elapsed } from "../src/components/elapsed.tsx";
 import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
 import { Input } from "../src/components/input.tsx";
 import { Outline, useInView } from "../src/components/outline.tsx";
+import { InlineDiff, type DiffDecision } from "../src/components/inline-diff.tsx";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../src/components/input-group.tsx";
 import { Kbd } from "../src/components/kbd.tsx";
 import { type MatchDecision, type MatchPair, MatchReview } from "../src/components/match-review.tsx";
@@ -23,6 +24,7 @@ import { NotificationStack, type Notice } from "../src/components/notification-s
 import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats, type TurnFile } from "../src/components/message-actions.tsx";
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
 import { Popsheet } from "../src/components/popsheet.tsx";
+import { PromptLibrary, type PromptTemplate } from "../src/components/prompt-library.tsx";
 import { type SegmentOption, SegmentedControl } from "../src/components/segmented-control.tsx";
 import { Shimmer } from "../src/components/shimmer.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
@@ -43,7 +45,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline"] },
-	{ label: "Agent", pages: ["Composer", "ComposerSettings", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview"] },
+	{ label: "Agent", pages: ["Composer", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "SegmentedControl", "Tabs", "Card", "Alert", "Feedback"] },
@@ -329,6 +331,33 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Loading", render: () => <MatchReview pairs={null} label={MR_LABEL} /> },
 		{ name: "Empty", render: () => <Matches pairs={[]} /> },
 		{ name: "Long", render: () => <Matches pairs={MR_LONG} /> },
+	],
+	PromptLibrary: [
+		{ name: "Default", render: () => <Prompts /> },
+		{ name: "Filling", render: () => <Act run={(el) => el.querySelector<HTMLInputElement>("p input")?.focus()}><Prompts /></Act> },
+		{ name: "Ready", render: () => <Prompts defaultValue="ship" /> },
+		{ name: "Search", render: () => <Act run={(el) => type(el.querySelector('input[aria-label^="搜索"]'), "界面")}><Prompts /></Act> },
+		{ name: "Editing", render: () => <Act run={(el) => click(el, 'button[aria-label^="编辑"]')}><Prompts defaultValue="polish" /></Act> },
+		{ name: "New", render: () => <Act run={(el) => click(el, 'button[aria-label^="新建"]')}><Prompts /></Act> },
+		{ name: "Saving", render: () => <Act run={(el) => { click(el, 'button[aria-label^="编辑"]'); setTimeout(() => press(el, "保存"), 50); }}><Prompts hang /></Act> },
+		{ name: "Deleted", render: () => <Act run={(el) => { click(el, 'button[aria-label^="编辑"]'); setTimeout(() => press(el, "删除"), 50); }}><Prompts defaultValue="bug" /></Act> },
+		{ name: "Read only", render: () => <PromptLibrary templates={PL} onUse={(p) => toast("已放进输入框", { description: p })} /> },
+		{ name: "Empty", render: () => <Prompts initial={[]} /> },
+		{ name: "Loading", render: () => <PromptLibrary templates={null} /> },
+		{ name: "Long", render: () => <Prompts initial={PL_LONG} defaultValue="listing" /> },
+		{ name: "Narrow", render: () => <div className="max-w-[360px]"><Prompts /></div> },
+	],
+	InlineDiff: [
+		{ name: "Default", render: () => <Edits a={COPY_A} b={COPY_B} ask="改短一点" /> },
+		{ name: "Deciding", render: () => <Act run={(el) => el.querySelectorAll<HTMLElement>("[data-change]")[1]?.focus()}><Edits a={COPY_A} b={COPY_B} ask="改短一点" /></Act> },
+		{ name: "All reviewed", render: () => <Act run={(el) => press(el, "全部接受")}><Edits a={COPY_A} b={COPY_B} ask="改短一点" /></Act> },
+		{ name: "Settled", render: () => <InlineDiff original={COPY_A} suggested={COPY_B} decisions={COPY_DECIDED} label={<Asked ask="改短一点" />} /> },
+		{ name: "Read only", render: () => <InlineDiff original={DOC_A} suggested={DOC_B} label="docs/product.md" readOnly /> },
+		{ name: "Writing", render: () => <InlineDiff original={PROMPT_A} suggested={null} label={<Asked ask="让它更像台湾的店" />} /> },
+		{ name: "No changes", render: () => <InlineDiff original={COPY_B} suggested={COPY_B} label={<Asked ask="改短一点" />} /> },
+		{ name: "Long", render: () => <div className="max-h-[420px] overflow-y-auto rounded-2xl"><Edits a={PROMPT_LONG_A} b={PROMPT_LONG_B} ask="让它更像台湾的店" /></div> },
+		{ name: "Prompt", render: () => <Edits a={PROMPT_A} b={PROMPT_B} ask="让它更像台湾的店" /> },
+		{ name: "English", render: () => <Edits a={EN_A} b={EN_B} ask="Make it shorter" /> },
 	],
 	Toast: [
 		{
@@ -1047,4 +1076,104 @@ function NoBrowser() {
 			}
 		/>
 	);
+}
+
+/** Runs a step on the story once it's on screen – focus a blank, type a search, open the editor */
+function Act({ run, children }: { run: (el: HTMLElement) => void; children: ReactNode }) {
+	const ref = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		const t = setTimeout(() => ref.current && run(ref.current), 80);
+		return () => clearTimeout(t);
+	}, []);
+	return <div ref={ref}>{children}</div>;
+}
+const click = (el: HTMLElement, sel: string) => el.querySelector<HTMLElement>(sel)?.click();
+const press = (el: HTMLElement, text: string) => [...el.querySelectorAll("button")].find((b) => b.textContent?.trim() === text)?.click();
+/** Types into a controlled field: React only hears the native setter plus an input event */
+function type(input: HTMLInputElement | null, text: string) {
+	if (!input) return;
+	Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, text);
+	input.dispatchEvent(new Event("input", { bubbles: true }));
+	input.focus();
+}
+
+const PL: PromptTemplate[] = [
+	{ id: "handoff", title: "接手项目", group: "交接", body: "你接手 {项目}：{路径}。先读仓库里的 AGENTS.md、README.md 和 docs/，跑一遍 check、test，再告诉我现在的状况和你打算先做什么。", variables: { 项目: { description: "项目名，例 Penna" }, 路径: { description: "仓库在这台电脑上的路径" } } },
+	{ id: "polish", title: "抠界面细节", group: "界面", body: "UI 细节抠一下：{哪里}有问题，再找找别的地方有没有同样的问题。改完截图看过，宽度 {宽度}、{模式}。", variables: { 哪里: { description: "看到问题的地方" }, 宽度: { description: "截图的宽度", default: "390" }, 模式: { description: "浅色或深色", default: "深色" } } },
+	{ id: "component", title: "搬组件", group: "界面", body: "/component {组件}：先提议，在 block 里画给我看，我点头再提交。", variables: { 组件: { description: "affectUI 里的组件名" } } },
+	{ id: "bug", title: "先找原因", group: "排查", body: "{现象}。先找到原因、指出是哪一行，别急着改。", variables: { 现象: { description: "看到了什么、在哪一步" } } },
+	{ id: "ship", title: "提交并推送", group: "收尾", body: "check、test 过了就提交，然后推送 {仓库}。", variables: { 仓库: { description: "要推送的仓库", default: "mixer" } } },
+];
+const PL_LONG: PromptTemplate[] = [
+	...PL,
+	{
+		id: "listing",
+		title: "上品：从 1688 链接生成蝦皮商品稿，核对规格、价格和类目",
+		group: "Penna",
+		body: "把这个 1688 商品做成蝦皮台湾站的商品稿：{链接}\n\n标题用繁体中文，不超过 60 个字，关键词放前面；描述分点写材质、尺寸、适用场景。规格照 1688 的写，价格按 {倍率} 倍加运费算，类目选最接近的。\n\n做完先别上架，把规格对照、核价和拿不准的地方列给我看。",
+		variables: { 链接: { description: "1688 的商品链接" }, 倍率: { description: "售价是进价的几倍", default: "2.2" } },
+	},
+	{ id: "orders", title: "处理今天的订单", group: "Penna", body: "读 chanboss 里 {日期} 的订单，检查货源和规格，能对上的加进 1688 购物车，对不上的列出来。", variables: { 日期: { default: "今天" } } },
+	...Array.from({ length: 12 }, (_, i) => ({ id: `more-${i}`, title: `第 ${i + 1} 个常用的提示词，标题长一点看看截断`, group: i % 2 ? "收尾" : "排查", body: `第 ${i + 1} 个提示词的内容，里面有一个 {空}。` })),
+];
+
+/** A library wired like a host: saving takes half a second; hang – it never settles */
+function Prompts({ initial = PL, defaultValue, hang }: { initial?: PromptTemplate[]; defaultValue?: string; hang?: boolean }) {
+	const [ts, setTs] = useState(initial);
+	return (
+		<PromptLibrary
+			templates={ts}
+			defaultValue={defaultValue}
+			onUse={(p) => toast("已放进输入框", { description: p })}
+			onSave={(t) =>
+				hang
+					? new Promise(() => {})
+					: new Promise((ok) =>
+							setTimeout(() => {
+								setTs((l) => (l.some((x) => x.id === t.id) ? l.map((x) => (x.id === t.id ? t : x)) : [...l, t]));
+								ok(undefined);
+							}, 500),
+						)
+			}
+			onDelete={(id) => setTs((l) => l.filter((x) => x.id !== id))}
+		/>
+	);
+}
+
+const COPY_A = "这款保温杯采用 316 不锈钢内胆，保温效果长达 12 小时，非常适合上班族和学生党日常使用。杯盖带有防漏设计，放进包里也不用担心洒出来。";
+const COPY_B = "这款保温杯采用 316 不锈钢内胆，保温 12 小时，适合通勤、上学日常使用。杯盖防漏，放进包里不怕洒。";
+const COPY_DECIDED: DiffDecision[] = ["accept", "accept", "reject", "accept"];
+const PROMPT_A = "你是网店助手。根据 1688 的商品页写蝦皮的标题和描述。\n\n标题不超过 60 个字。描述要分点写清楚材质、尺寸和适用场景，语气要热情一点。\n\n不要编造商品页上没有的信息。";
+const PROMPT_B = "你是网店助手。根据 1688 的商品页，为蝦皮台湾站写繁体中文的标题和描述。\n\n标题不超过 60 个字，关键词放前面。描述分点写材质、尺寸和适用场景，语气亲切。\n\n商品页上没有的信息不要写，拿不准就问。";
+const PROMPT_LONG_A = [
+	PROMPT_A,
+	"规格照 1688 的写。颜色、尺码要和图片对得上，对不上的先标出来。",
+	"价格按进价的 2 倍算，再加运费。运费按重量估，估不准就写一个范围。",
+	"类目选最接近的那个。如果有两个都差不多，选卖得多的那个。",
+	"图片用 1688 的主图和详情图，去掉带别家水印和二维码的，最多 9 张。",
+	"做完先别上架，把规格对照、核价和拿不准的地方列给我看。",
+].join("\n\n");
+const PROMPT_LONG_B = [
+	PROMPT_B,
+	"规格照 1688 的写，颜色、尺码要和图片对得上；对不上的标出来，先别猜。",
+	"价格按进价的 2.2 倍算，再加运费。运费按重量估，估不准就写一个范围。",
+	"类目选最接近的那个；两个差不多时，选蝦皮上卖得多的。",
+	"图片用 1688 的主图和详情图，去掉带水印、二维码的，最多 9 张，第一张放白底图。",
+	"做完先别上架，把规格对照、核价和拿不准的地方列给我看。",
+].join("\n\n");
+const DOC_A = "**输入框**：继续、分叉、新会话是同一个输入框。底下一排是「+」（图片、文件、skill）、运行设置（一颗按钮：模型、思考强度、权限，都按会话记着）、麦克风（说话输入）。";
+const DOC_B = "**输入框**：继续、分叉、新会话是同一个输入框。底下一排是「+」（图片、文件、skill、提示词）、运行设置（模型、思考强度、权限，按会话记着）、麦克风。";
+const EN_A = "Hi everyone, we are very excited to announce that the new dashboard is now available for all users. It loads a lot faster than before, and you can now export any report to CSV with just a single click. Let us know what you think!";
+const EN_B = "Hi everyone, the new dashboard is now live for all users. It loads twice as fast, and you can now export any report to CSV in one click. Let us know what you think!";
+
+/** The tray's line: who suggested it, and what was asked set apart by color */
+const Asked = ({ ask }: { ask: string }) => (
+	<>
+		Claude 的改写<span className="ml-2 text-foreground/70">{ask}</span>
+	</>
+);
+
+/** A review wired like a host: 「完成」 writes back for a moment, then the card is settled */
+function Edits({ a, b, ask }: { a: string; b: string; ask: string }) {
+	return <InlineDiff original={a} suggested={b} label={<Asked ask={ask} />} onDone={(t) => new Promise((ok) => setTimeout(() => ok(toast.success("已写回", { description: t })), 800))} />;
 }
