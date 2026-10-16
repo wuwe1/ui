@@ -6,6 +6,7 @@ import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-ca
 import { Badge } from "../src/components/badge.tsx";
 import { Button } from "../src/components/button.tsx";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../src/components/card.tsx";
+import { ContextWindow, type ContextPart } from "../src/components/context-window.tsx";
 import { ConnectionCard, type ConnectionMark, ConnectionNote, ConnectionRow } from "../src/components/connection-card.tsx";
 import { Elapsed } from "../src/components/elapsed.tsx";
 import { Inbox as AgentInbox, InboxEmpty, type InboxItem, type InboxStatus } from "../src/components/inbox.tsx";
@@ -33,7 +34,7 @@ export type Story = { name: string; render: () => ReactNode };
 /** The sidebar: pages by group. A page missing here still shows, under Other */
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
-	{ label: "Agent", pages: ["Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "MessageActions", "ConnectionCard", "MemoryPanel"] },
+	{ label: "Agent", pages: ["Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "MessageActions", "ConnectionCard", "MemoryPanel"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
 	{ label: "Status and loading", pages: ["StatusIcon", "Shimmer", "Skeleton", "Spinner", "Placeholder"] },
 	{ label: "Base", pages: ["Button", "Badge", "Input", "Tabs", "Card", "Alert", "Feedback"] },
@@ -197,6 +198,15 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Long", render: () => <AgentInbox items={LONG_RUNS} onOpen={() => {}} /> },
 		{ name: "Loading", render: () => <AgentInbox items={null} /> },
 		{ name: "Empty", render: () => <AgentInbox items={[]} empty={<InboxEmpty><Button variant="outline" size="sm"><SquarePen />新会话</Button></InboxEmpty>} /> },
+	],
+	ContextWindow: [
+		{ name: "Loading", render: () => <ContextWindow parts={null} limit={200_000} /> },
+		{ name: "Default", render: () => <Ctx /> },
+		{ name: "Near the limit", render: () => <Ctx messages={168_000} /> },
+		{ name: "Compact", render: () => <Ctx live /> },
+		{ name: "Can't compact", render: () => <Ctx disabled="运行中：这一轮结束后再压缩" /> },
+		{ name: "Fresh", render: () => <Ctx messages={900} /> },
+		{ name: "Narrow", render: () => <div className="w-[300px]"><Ctx /></div> },
 	],
 	MessageActions: [
 		{ name: "Quiet", render: () => <Reply time /> },
@@ -483,6 +493,24 @@ function Runs({ open, loadingSteps, live }: { open?: boolean; loadingSteps?: boo
 				onOpen={() => toast("打开会话")}
 				onToggle={(it, on) => { if (on && !loaded.has(it.id)) setTimeout(() => setLoaded((l) => new Set([...l, it.id])), 600); }}
 			/>
+		</div>
+	);
+}
+
+/** Context parts as mixer feeds them; compacting takes 2.5s, then the conversation shrinks */
+function Ctx({ messages = 108_600, live, disabled }: { messages?: number; live?: boolean; disabled?: string }) {
+	const [msgs, setMsgs] = useState(messages);
+	const parts: ContextPart[] = [
+		{ id: "system", label: "系统提示", tokens: 4200, tone: 0 },
+		{ id: "tools", label: "工具", tokens: 12_800, tone: 1 },
+		{ id: "memory", label: "Memory 文件", tokens: 3900, tone: 2, items: [{ id: "a", label: "mixer/CLAUDE.md", tokens: 2400, mono: true, title: "/Users/demo/repos/mixer/CLAUDE.md" }, { id: "b", label: "memory/MEMORY.md", tokens: 1500, mono: true }] },
+		{ id: "skills", label: "Skills", tokens: 2100, tone: 3, items: [{ id: "c", label: "component", tokens: 1300, mono: true }, { id: "d", label: "show-me", tokens: 800, mono: true }] },
+		{ id: "messages", label: "消息", tokens: msgs, compact: true, items: [{ id: "e", label: "工具结果", tokens: Math.round(msgs * 0.6) }, { id: "f", label: "Claude 的回复", tokens: Math.round(msgs * 0.25) }, { id: "g", label: "你的消息", tokens: Math.round(msgs * 0.15) }] },
+	];
+	return (
+		<div className={col}>
+			<ContextWindow parts={parts} limit={200_000} model="claude-opus-5-5" threshold={0.92} compactDisabled={disabled} onCompact={() => new Promise((ok) => setTimeout(ok, 2500)).then(() => setMsgs(14_200))} />
+			{live && msgs !== messages && <Button variant="ghost" size="xs" className="w-fit" onClick={() => setMsgs(messages)}>再来一次</Button>}
 		</div>
 	);
 }

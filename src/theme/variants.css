@@ -137,6 +137,22 @@
   }
 }
 
+/* ContextWindow: a part's cells while it compacts – a wave fades through them; each cell sets its own animation-delay */
+@utility cell-wave {
+  animation: cell-wave 1.2s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+@keyframes cell-wave {
+  50% {
+    opacity: 0.3;
+  }
+}
+
 /*
  * MessageActions' quiet part: shown while its message – the nearest [data-message] – is hovered or holds focus. It fades, never moves.
  * Touch has no hover: hidden there, and out of the tab order, until a tap focuses the message
