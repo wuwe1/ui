@@ -11,7 +11,7 @@ Motion answers a question a person has the moment something changes. Before pick
 | Question | Answered by |
 |---|---|
 | Where did my choice go? | glide |
-| What just arrived? | grow, pop, rise |
+| What just arrived? | appear, grow, pop, rise |
 | Which one is leaving? | darken-then-fold |
 | Did it count up or down? | roll |
 | Is something still working? | shimmer |
@@ -22,6 +22,7 @@ Motion answers a question a person has the moment something changes. Before pick
 | Where did my message land? | slot-in |
 | Is it live right now? | pulse |
 | Is it done with? | fold |
+| Is it done with – without losing my place? | tuck |
 
 ## The vocabulary
 
@@ -35,10 +36,13 @@ Motion answers a question a person has the moment something changes. Before pick
 | roll | A count changed, and which way | The new digits slide in from below when it grows, from above when it shrinks, from 70% away, 200ms | The number changes in place | `Combobox` count and 「+N」 |
 | tween | A measured value moved | The number counts to its new value in 300ms (`useRoll`) | It jumps | `UsageMeter`, `ContextWindow` |
 | follow-height | The content grew or shrank | The measured height transitions in 200ms | It jumps | `Command` list, `Combobox` list and field |
-| rise | A new line appeared | It fades in from 2–4px below, 200ms | Fade | Create rows, empty text, toasts |
+| appear | A new line in a list – here, to stay | It fades in where it will stay, 200ms; nothing slides | The same | `Run` |
+| rise | A new surface came in at an edge | It fades in from 2–4px below, 200ms | Fade | Toasts; `Combobox` create row and empty text, still – they should `appear` |
 | open | A surface came from its trigger | Fade, 4px from the trigger's side, scale 0.98 → 1, 200ms; it closes with a 150ms fade | Fade | `Combobox`, `Popover`, `Command` |
 | turn | Open or closed | A chevron turns 180° – 90° for a disclosure – in 200ms | At once | `Combobox` toggle, `Chevron` |
 | fold | Done with it, and still there if you look | It folds to a line or away – grid rows `1fr` → `0fr` with a fade, 200ms | At once | `ApprovalCard`, `DecisionInbox`, `ToolCallGroup` |
+| tuck | Done with it – and out of your way without moving what you read | It stays open while in view; once it has scrolled out of sight above, it folds at once and its height comes off the scroll position (`useTuck`) | The same | `Run`, `RunStep` |
+| slot-in | It went there – to the step it changed | It moves from where it waited into its place, 620ms `ease-out-strong`; a tint fades over 1.4s and its ✓ shows, in a place held from the start | It fades in, tinted | `RunNote` |
 | shimmer | Work is going on in this line | A band sweeps across the text in 1.8s, linear, without end | No band; muted text | `Shimmer`, `ThinkingLoader`, steps |
 | lift | The agent took it | It lifts and fades, 200ms | Fade | `MessageQueue` |
 | sink | Put back where it came from | It sinks toward its source and fades | Fade | `MessageQueue` withdraw |
@@ -58,7 +62,6 @@ Seen in affectUI, measured, waiting for a component that needs them:
 | draw | Finished | A ✓ pops (0.5 → 1.12 → 1, 460ms) and its stroke draws in 360ms |
 | pulse | Live right now | A dot breathes – scale and opacity – every 1.2–1.6s |
 | trail | The run went one step further | The line down the steps grows to the new step, scaleY over 520ms |
-| slot-in | It went there – to the step it changed | The item moves from the queue into its step, FLIP over 620ms, then a tint fades out over 1.4s |
 
 ## Rules
 
@@ -66,3 +69,4 @@ Seen in affectUI, measured, waiting for a component that needs them:
 - Reuse before inventing; a new motion needs a moment no motion here answers
 - Every motion has a reduced form that keeps the information – movement becomes a fade, loops stand still
 - Nothing moves without a change in what it means; hover may color, never move
+- Text people read stays put. A new line appears where it will stay; words and numbers change in place; while something runs, it grows only at its end; an automatic fold waits until the item is out of sight (`tuck`). What a person opens or closes by hand may slide

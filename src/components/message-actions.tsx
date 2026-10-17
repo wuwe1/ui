@@ -172,8 +172,8 @@ function Stat({ icon: I, name, children }: { icon: LucideIcon; name: string; chi
 	);
 }
 
-/** A fact that opens a list: files, subagents. Picking a row closes it */
-function StatList({ icon: I, name, title, children, rows }: { icon: LucideIcon; name: string; title: string; children: ReactNode; rows: (close: () => void) => ReactNode }) {
+/** A fact that opens a list: files, subagents. Picking a row closes it. No icon – the words name it, as in Run's header */
+function StatList({ icon: I, name, title, children, rows }: { icon?: LucideIcon; name: string; title: string; children: ReactNode; rows: (close: () => void) => ReactNode }) {
 	const [open, setOpen] = useState(false);
 	return (
 		<Popsheet
@@ -184,7 +184,7 @@ function StatList({ icon: I, name, title, children, rows }: { icon: LucideIcon; 
 			className="w-80 max-h-80"
 			trigger={
 				<button type="button" className={cn("-mx-1 flex items-center gap-1 rounded-md px-1 py-0.5 outline-none hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50", HIT_TEXT)}>
-					<I className="size-3 shrink-0" aria-hidden />
+					{I && <I className="size-3 shrink-0" aria-hidden />}
 					<span className="sr-only">{name}</span>
 					<span className="flex items-center gap-1 whitespace-nowrap">{children}</span>
 				</button>
@@ -196,6 +196,54 @@ function StatList({ icon: I, name, title, children, rows }: { icon: LucideIcon; 
 }
 
 const ROW = "flex w-full min-w-0 items-center gap-2 rounded-md px-1 py-1.5 text-left text-xs pointer-coarse:min-h-11";
+
+/** A turn's changed files as list rows: name, folder in gray, lines added and removed; onFile opens one and closes the list */
+function TurnFileRows({ files, onFile, close }: { files: TurnFile[]; onFile?: (path: string) => void; close: () => void }) {
+	return files.map((f) => {
+		const { name, dir } = splitPath(f.path);
+		const body = (
+			<>
+				<span className="shrink-0 font-medium">{name}</span>
+				<span className="min-w-0 flex-1 truncate text-muted-foreground">{dir}</span>
+				<Lines added={f.added} removed={f.removed} />
+			</>
+		);
+		return (
+			<li key={f.path}>
+				{onFile ? (
+					<button type="button" className={cn(ROW, "hover:bg-accent")} onClick={() => { close(); onFile(f.path); }}>
+						{body}
+					</button>
+				) : (
+					<span className={ROW}>{body}</span>
+				)}
+			</li>
+		);
+	});
+}
+
+/** A turn's subagents as list rows; onAgent opens one and closes the list */
+function TurnAgentRows({ agents, onAgent, close }: { agents: TurnAgent[]; onAgent?: (id: string) => void; close: () => void }) {
+	return agents.map((a) => {
+		const body = (
+			<>
+				<Bot className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+				<span className="min-w-0 truncate">{a.label}</span>
+			</>
+		);
+		return (
+			<li key={a.id}>
+				{onAgent ? (
+					<button type="button" className={cn(ROW, "hover:bg-accent")} onClick={() => { close(); onAgent(a.id); }}>
+						{body}
+					</button>
+				) : (
+					<span className={ROW}>{body}</span>
+				)}
+			</li>
+		);
+	});
+}
 
 /**
  * ms – how long the turn took. tools, failed – calls made and how many failed. files – changed files with their lines; onFile opens one.
@@ -230,27 +278,7 @@ function TurnStats({ ms, tools = 0, failed = 0, files = [], onFile, agents = [],
 					icon={FileDiff}
 					name="改动"
 					title="这一轮改动的文件"
-					rows={(close) => files.map((f) => {
-						const { name, dir } = splitPath(f.path);
-						const body = (
-							<>
-								<span className="shrink-0 font-medium">{name}</span>
-								<span className="min-w-0 flex-1 truncate text-muted-foreground">{dir}</span>
-								<Lines added={f.added} removed={f.removed} />
-							</>
-						);
-						return (
-							<li key={f.path}>
-								{onFile ? (
-									<button type="button" className={cn(ROW, "hover:bg-accent")} onClick={() => { close(); onFile(f.path); }}>
-										{body}
-									</button>
-								) : (
-									<span className={ROW}>{body}</span>
-								)}
-							</li>
-						);
-					})}
+					rows={(close) => <TurnFileRows files={files} onFile={onFile} close={close} />}
 				>
 					{files.length} 个文件
 					<Lines added={lines.added} removed={lines.removed} />
@@ -261,21 +289,7 @@ function TurnStats({ ms, tools = 0, failed = 0, files = [], onFile, agents = [],
 					icon={Bot}
 					name="子代理"
 					title="这一轮的子代理"
-					rows={(close) => agents.map((a) => (
-						<li key={a.id}>
-							{onAgent ? (
-								<button type="button" className={cn(ROW, "hover:bg-accent")} onClick={() => { close(); onAgent(a.id); }}>
-									<Bot className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-									<span className="min-w-0 truncate">{a.label}</span>
-								</button>
-							) : (
-								<span className={ROW}>
-									<Bot className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-									<span className="min-w-0 truncate">{a.label}</span>
-								</span>
-							)}
-						</li>
-					))}
+					rows={(close) => <TurnAgentRows agents={agents} onAgent={onAgent} close={close} />}
 				>
 					{agents.length} 个子代理
 				</StatList>
@@ -295,4 +309,4 @@ function Lines({ added, removed }: { added: number; removed: number }) {
 	);
 }
 
-export { CopyAction, MessageAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats };
+export { CopyAction, MessageAction, MessageActions, MessageActionsQuiet, MessageMenu, StatList, TurnAgentRows, TurnFileRows, TurnStats };

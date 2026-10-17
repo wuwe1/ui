@@ -1,6 +1,6 @@
 # ToolCall
 
-An agent's tool calls, one line each – icon, name, summary, then a clock, the duration or 「失败」 – that open to their arguments and result. ToolCallGroup folds a run of them under one header.
+An agent's tool calls, one line each – icon, name, summary, then a clock, the duration, 「失败」 or 「已中断」 – that open to the thought before them, their arguments and result. ToolCallGroup folds a run of them under one header; `Run` lays a whole turn out in steps.
 
 ## When to use
 
@@ -19,8 +19,8 @@ ToolCall
 - Icon – the tool's own; red when the call failed
 - Name – 「Bash」, 「Read」
 - Summary – the command, path or query, monospace, cut with `…`
-- Right side – a clock while running, the duration from 1s up, 「失败」 in red
-- Open – the error in a red box with copy and an optional 「重试」, then 「参数」 and 「结果」, each with copy, and 「显示完整结果」 for a cut result. A long error scrolls inside the box; several lines read as code
+- Right side – a clock while running, the duration from 1s up, 「失败」 in red, ⏹ 「已中断」 in gray when the person stopped the run during it
+- Open – 「思考」, what the agent thought just before; the error in a red box with copy and an optional 「重试」; then 「参数」 and 「结果」, each with copy, and 「显示完整结果」 for a cut result. A long error scrolls inside the box; several lines read as code
 
 ToolCallGroup
 - Chevron, then the stacked icons of the last three tools
@@ -30,7 +30,7 @@ ToolCallGroup
 
 ## States
 
-- ToolCall: Running, Done, Open, Failed, Loading, Long
+- ToolCall: Running, Done, Open, With thought, Failed, Stopped, Loading, Long
 - ToolCallGroup: Running, Done, folded, Done, open, Some failed, One failed call
 
 ## API reference
@@ -39,7 +39,8 @@ ToolCall
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `call` | `ToolCallItem` | – | `{ id, name, summary, status, since?, ms?, icon? }` – status is "running", "done" or "failed" |
+| `call` | `ToolCallItem` | – | `{ id, name, summary, status, since?, ms?, icon? }` – status is "running", "done", "failed" or "stopped" |
+| `thought` | `ReactNode` | – | The agent's thought before the call, first when open |
 | `args` | `string \| null` | – | Shown open; null while loading |
 | `result` | `string \| null` | – | Shown open; null while loading |
 | `error` | `string` | – | The message in the red box |
@@ -77,7 +78,7 @@ Also exported: `ToolCallLine`, the line alone for custom rows, and `ToolStack`.
 - Group headers and lines are buttons with `aria-expanded`; a folded body leaves the tab order
 - Each group has a polite live region: 「正在运行 Bash」 while a call runs, 「正在思考」 between calls, 「已完成 5 次工具调用，2 次失败」 once done
 - The stacked icons are `role="img"`, named 「用到的工具：Read、Grep」
-- Failure is never color alone – 「失败」 or ⚠ N in words
+- Failure is never color alone – 「失败」 or ⚠ N in words; an interrupted call says 「已中断」
 - Clocks are `aria-hidden`
 
 ## Motion

@@ -1,6 +1,7 @@
 // What a tool call group shows: which calls run, how many failed, the icons it stacks. Pure – test/tool-call.test.ts.
 
-export type ToolCallStatus = "running" | "done" | "failed";
+/** stopped – the person interrupted the run while this call ran: not a failure */
+export type ToolCallStatus = "running" | "done" | "failed" | "stopped";
 
 /** One tool call, as the components read it */
 export type ToolCallData = {

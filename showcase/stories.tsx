@@ -1,6 +1,6 @@
 // Components and their states on the showcase. State names match States in docs/components/<file>.md.
-import { AppWindow, Bell, MoveUpRight, CircleAlert, FileCode, FileText, Folder, FolderGit2, History, Library, MessageSquare, Moon, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
-import { type ComponentProps, type ReactNode, useEffect, useRef, useState } from "react";
+import { AppWindow, Bell, Bot, MoveUpRight, CircleAlert, FileCode, FileText, Folder, FolderGit2, History, Library, type LucideIcon, MessageSquare, Moon, GitFork, Globe, Hand, Inbox, ListChecks, Pencil, Plus, Search, Sparkles, SquarePen, SquareTerminal, Store, Trash2 } from "lucide-react";
+import { type ComponentProps, Fragment, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../src/components/alert.tsx";
 import { ApprovalCard, type ApprovalStatus } from "../src/components/approval-card.tsx";
 import { Badge } from "../src/components/badge.tsx";
@@ -30,6 +30,7 @@ import { CopyAction, MessageActions, MessageActionsQuiet, MessageMenu, TurnStats
 import { Loading, Placeholder } from "../src/components/placeholder.tsx";
 import { Popsheet } from "../src/components/popsheet.tsx";
 import { PromptLibrary, type PromptTemplate } from "../src/components/prompt-library.tsx";
+import { Run, RunNote, RunStep, RunTail } from "../src/components/run.tsx";
 import { type SegmentOption, SegmentedControl } from "../src/components/segmented-control.tsx";
 import { Shimmer } from "../src/components/shimmer.tsx";
 import { Skeleton } from "../src/components/skeleton.tsx";
@@ -51,7 +52,7 @@ export type Story = { name: string; render: () => ReactNode };
 export const NAV: { label: string; pages: string[] }[] = [
 	{ label: "Foundations", pages: ["Theme"] },
 	{ label: "Navigation", pages: ["Outline", "Command"] },
-	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff", "DecisionInbox"] },
+	{ label: "Agent", pages: ["Composer", "MessageQueue", "ComposerSettings", "PromptLibrary", "Inbox", "ThinkingLoader", "Run", "ToolCallGroup", "ToolCall", "ApprovalCard", "ContextWindow", "UsageMeter", "MessageActions", "ConnectionCard", "MemoryPanel", "MatchReview", "InlineDiff", "DecisionInbox"] },
 	{ label: "Inputs", pages: ["Combobox"] },
 	{ label: "Data", pages: ["DataGrid"] },
 	{ label: "Notifications", pages: ["Toast", "NotificationStack"] },
@@ -238,11 +239,34 @@ export const STORIES: Record<string, Story[]> = {
 		{ name: "Pill", render: () => <ThinkingLoader variant="pill" label="正在搜索网页…" since={Date.now() - 3_000} /> },
 		{ name: "Done", render: () => <div className={col}><ThinkingLoader done since={Date.now() - 4_200} /><ThinkingLoader variant="pill" done since={Date.now() - 12_400} /></div> },
 	],
+	Run: [
+		{ name: "Running", render: () => <RunNow /> },
+		{ name: "Thinking", render: () => <RunNow thinking /> },
+		{ name: "Your message read", render: () => <RunRead /> },
+		{ name: "Done – folded", render: () => <Run state="done" steps={18} ms={runSec(RUN_A) * 1000} tools={runSum(RUN_A)} files={RUN_FILES}>{doneSteps(RUN_A)}</Run> },
+		{ name: "Done – open", render: () => <Run state="done" steps={18} ms={runSec(RUN_A) * 1000} tools={runSum(RUN_A)} files={RUN_FILES} defaultOpen>{doneSteps(RUN_A, 3)}</Run> },
+		{
+			name: "Some failed",
+			render: () => {
+				const steps = RUN_A.slice(0, 5).map((s, k) => (k === 1 ? { ...s, calls: s.calls.map((c, j): RunCallData => (j === 4 ? [c[0], c[1], c[2], true] : c)) } : s));
+				return <Run state="done" steps={5} ms={runSec(steps) * 1000} tools={runSum(steps)} failed={1} defaultOpen>{doneSteps(steps, 1)}</Run>;
+			},
+		},
+		{ name: "Stopped while thinking", render: () => <RunStopped /> },
+		{ name: "Stopped during a call", render: () => <RunStopped during /> },
+		{ name: "Subagent report", render: () => <RunReport /> },
+		{ name: "Thought before a call", render: () => <ToolCall call={runCalls(RUN_A[3]!, 3)[5]!} thought={RUN_THOUGHT} args={'{ "command": "python3 /tmp/tray/tools/retag.py src/components/approval-card.tsx" }'} result="ok src/components/approval-card.tsx Tray" defaultOpen /> },
+		{ name: "Long", render: () => <RunLong /> },
+		{ name: "Many", render: () => <Run state="done" steps={36} ms={runSec(RUN_A) * 2000} tools={runSum(RUN_A) * 2} files={RUN_FILES} defaultOpen>{doneSteps([...RUN_A, ...RUN_A])}</Run> },
+		{ name: "Live", render: () => <RunLive /> },
+	],
 	ToolCall: [
 		{ name: "Running", render: () => <ToolCall call={{ ...BASH, status: "running", since: Date.now() - 8_000 }} /> },
 		{ name: "Done", render: () => <ToolCall call={READ} /> },
 		{ name: "Open", render: () => <ToolCall call={GREP} args={GREP_ARGS} result={GREP_RESULT} defaultOpen /> },
+		{ name: "With thought", render: () => <ToolCall call={GREP} thought="先找出所有用到旧阴影的地方，再决定换成哪一档。" args={GREP_ARGS} result={GREP_RESULT} defaultOpen /> },
 		{ name: "Failed", render: () => <ToolCall call={FETCH} args={FETCH_ARGS} error="请求超时：8 秒内 hubspot.com 没有响应" onRetry={() => {}} defaultOpen /> },
+		{ name: "Stopped", render: () => <ToolCall call={{ ...BASH, status: "stopped" }} /> },
 		{ name: "Loading", render: () => <ToolCall call={READ} args={null} result={null} defaultOpen /> },
 		{ name: "Long", render: () => <ToolCall call={{ ...READ, summary: "web/src/components/conversation/very-long-file-name-that-does-not-fit.tsx" }} /> },
 	],
@@ -1719,4 +1743,277 @@ const Asked = ({ ask }: { ask: string }) => (
 /** A review wired like a host: 「完成」 writes back for a moment, then the card is settled */
 function Edits({ a, b, ask }: { a: string; b: string; ask: string }) {
 	return <InlineDiff original={a} suggested={b} label={<Asked ask={ask} />} onDone={(t) => new Promise((ok) => setTimeout(() => ok(toast.success("已写回", { description: t })), 800))} />;
+}
+
+// ── Run: two real turns of a Claude Code session. A – 18 steps, two messages sent while it ran; B – stopped at step 5 ──
+
+/** A call: tool, summary, seconds, failed */
+type RunCallData = [string, string, number, boolean?];
+/** A step: what was said, how long it took, its calls; notes – [read after how many calls, the words] */
+type RunStepData = { say: string; sec: number; calls: RunCallData[]; notes?: [number, string][] };
+const RUN_ICONS: Record<string, LucideIcon> = { Bash: SquareTerminal, Read: FileText, Write: Pencil, Edit: Pencil, Grep: Search };
+
+const RUN_A: RunStepData[] = [
+	{ say: "好，做第 1、2 条。先看现在哪些组件各自画了托盘、怎么画的，好让 `Tray` 的接口正好接得住它们；也看主题里阴影现在怎么定义。", sec: 1, calls: [["Bash", "Find tray and shadow usage across ui components", 0.5]] },
+	{ say: "先看主题里的 token 是怎么推出来、怎么生成的，阴影要照同一条路加进去。", sec: 198, calls: [["Bash", "Read the theme roles derivation", 0.8], ["Bash", "See how translucent layers and CSS are emitted", 0.7], ["Bash", "Read theme tests and the rest of roles.ts", 0.4], ["Bash", "List every shadow utility used in ui", 0.4], ["Bash", "Check theme variables exist in built CSS", 0.6], ["Bash", "Take before screenshots of affected pages", 96.9]] },
+	{ say: "「改前」截好了（14 页 × 3 种宽度和深浅色，共 42 张）。现在加阴影 token：", sec: 15, calls: [["Bash", "Add shade tokens and two elevation shadows", 1], ["Bash", "Drop unneeded color mappings for shades", 1.1]] },
+	{
+		say: "现在写 `Tray`（托盘、卡片、托盘标签三件），加一个测试守住「只用两档阴影」，再把所有组件里的阴影换掉。",
+		sec: 173,
+		calls: [["Write", "src/components/tray.tsx", 14.4], ["Write", "test/elevation.test.ts", 8.8], ["Bash", "Swap every shadow for the two tokens; run the test", 0.7], ["Bash", "Read the tray markup in ApprovalCard and DecisionInbox", 0.5], ["Bash", "Map div open/close lines in ApprovalCard's tray", 0.5], ["Bash", "Move ApprovalCard onto Tray", 1.3], ["Bash", "List remaining tray sites to migrate", 0.5], ["Bash", "Retag tray roots and cards in five components", 0.9], ["Bash", "Read the remaining multi-line tray sites", 0.5], ["Bash", "Finish moving trays onto Tray, TrayCard, TrayLabel", 1.4]],
+		notes: [[3, "深色里卡片的影子再明显一点，现在几乎看不出来"], [6, "托盘的标签要和卡片里的字对齐，不是和卡片的边对齐"]],
+	},
+	{ say: "类型检查过了。UsageMeter 里还有 3 处像托盘的写法，看一下。", sec: 16, calls: [["Bash", "Check UsageMeter's tray-like markup", 0.7], ["Bash", "Read UsageMeter's tray structure", 0.7], ["Bash", "Move UsageMeter onto Tray; check and test", 2]] },
+	{ say: "8 个组件都换成了 `Tray`，126 个测试全过。写 `Tray` 的规格和展示页，主题文档补上「两档阴影」。", sec: 19, calls: [["Write", "docs/components/tray.md", 1.2], ["Bash", "Find where elevation belongs in the docs", 0.5], ["Bash", "Document elevation in theme.md and the components rules", 0.6]] },
+	{ say: "再在展示页加 `Tray` 的几种状态：", sec: 11, calls: [["Bash", "Add Tray stories to the showcase", 1.6]] },
+	{ say: "检查和测试都过了。截「改后」，和「改前」逐页并排对比。", sec: 125, calls: [["Bash", "Take after screenshots and pair a few with before", 105.3], ["Read", "/tmp/tray/pair-ApprovalCard-1280-light.png", 0], ["Read", "/tmp/tray/pair-DecisionInbox-1280-dark.png", 0], ["Bash", "Pair ConnectionCard, PromptLibrary and UsageMeter", 0.9], ["Read", "/tmp/tray/pairs-2.png", 0], ["Read", "/tmp/tray/pair-PromptLibrary-390-dark.png", 0]], notes: [[1, "截图记得也看手机宽度"]] },
+	{ say: "这几个对照下来没有走样。深色里卡片底下多了一道看得见的影子，这是 `shadow-rest` 在深色加浓的效果。看一眼新的 `Tray` 展示页。", sec: 86, calls: [["Bash", "Combine Tray page screenshots light and dark", 0.8], ["Read", "/tmp/tray/tray-page.png", 0], ["Bash", "Find where the app stores prompt templates", 0.5], ["Bash", "Read the prompt store format and current prompts", 0.5], ["Write", "docs/motion.md", 0.6]] },
+	{ say: "接着在 `principles.md` 里加「工艺」一节，把上次说的七条做法写成规矩：", sec: 4, calls: [["Bash", "Add a Craft section to the principles", 0.5]] },
+	{ say: "组件流程里加上「时刻」这一步，排在「看懂」和「重新设计」之间。没有参照的新组件，先发散 2–3 个方向给你挑；交付前对照「工艺」清单。", sec: 35, calls: [["Bash", "Add the Moments step to the component skill", 0.6], ["Bash", "Update AGENTS.md; inspect helper scripts for the skill", 0.5], ["Bash", "Copy the measuring scripts into a study skill", 0.5], ["Bash", "Fix script header comments and verify imports load", 0.6]] },
+	{ say: "脚本都能正常加载。写 `study` skill 的说明：", sec: 17, calls: [["Write", "~/.claude/skills/study/SKILL.md", 0.6]] },
+	{ say: "skill 写好了。把 memory 里那条也改成指向这个 skill，再看提示词条目的格式。", sec: 28, calls: [["Bash", "Point the memory at the skill; read the Prompt shape", 0.8], ["Bash", "Check how saving a prompt works", 0.6], ["Bash", "Add the two brief templates to the prompts", 0.6]] },
+	{ say: "两条提示词已经加好了。应用自己的页面代码里，有没有也在用 Tailwind 默认阴影的？", sec: 61, calls: [["Bash", "Find default shadows and hand-drawn trays in the app", 0.6], ["Bash", "Read each shadow use in the app", 0.7], ["Bash", "Read the floating approvals container", 0.5], ["Bash", "Move the floating shadows to shadow-float", 4.6], ["Bash", "Add Tray to the block kit; check and test", 4.4]] },
+	{ say: "检查和测试都过了。打包组件库和应用，让 block 里也能用上新的 `Tray` 和阴影。", sec: 19, calls: [["Bash", "Build the library and the app", 2.6], ["Write", "/tmp/tray/block.tsx", 0.4]] },
+	{ say: "先在临时环境里试一遍这个 block。", sec: 89, calls: [["Bash", "Render the Tray block in a temporary server", 12.4], ["Write", "/tmp/research/agent-activity/findings.md", 0.6]] },
+	{ say: "把这次新量到的动效补进 `motion.md` 的「Not ours yet」：换字、依次出现、勾的描线、脉冲、时间线生长、挪进去。", sec: 4, calls: [["Bash", "Add newly measured motions to the vocabulary", 0.5]] },
+	{ say: "改动都是我的。最后看一眼 Tray 那个 block 在手机深色下的样子。", sec: 2, calls: [["Bash", "Downscale the block screenshot for review", 0.5], ["Read", "/tmp/tray/block-390-dark-s.png", 0]] },
+];
+
+const RUN_B: RunStepData[] = [
+	{ say: "先提交。确认一下组件库的改动都是我的，再只暂存自己的文件。", sec: 2, calls: [["Bash", "Review pending changes in both repos", 1.9]] },
+	{ say: "改动都是我的。提交组件库并推送，这次标题后面留空行。", sec: 70, calls: [["Bash", "Commit and push the Command rework", 3.3], ["Bash", "Commit the picker changes on main", 0.5], ["Bash", "Check whether the reader app needs date range picking", 0.6], ["Bash", "Search the reader app for date filters", 0.6], ["Bash", "See how the reader app uses dates in its views", 0.5], ["Bash", "Check the admin report's time range", 0.5], ["Bash", "Read the head of the admin panel script", 0.4], ["Bash", "Check file drops and the upload strip", 0.5], ["Bash", "Look for a pairing code input", 0.4], ["Bash", "Read the login page header", 0.6]] },
+	{ say: "配对是扫二维码、码带在地址里，不用手动输入，所以 OTP Input 暂时没处用。看一下现在附件上传的代码，好判断 Dropzone 能带来什么。", sec: 1, calls: [["Bash", "Read the attachment strip and upload code", 0.5]] },
+	{ say: "看一眼参照库里还有哪些组件，对照哪些已经搬过。", sec: 34, calls: [["Bash", "List the components from the open tab's sidebar", 0.8], ["Bash", "List the Dropzone contact sheets", 0.4], ["Read", "/tmp/affect/dropzone/sheet-dark-1220.png", 0.2], ["Read", "/tmp/affect/dropzone/sheet-mixed.png", 0]] },
+	{ say: "Dropzone 的样子和动效都清楚了。提议之前，再核对一下服务端上传的限制，数字要写准。", sec: 1, calls: [["Bash", "Check the upload size and image limits", 0.5]] },
+];
+
+const RUN_FILES: TurnFile[] = [
+	{ path: "src/components/tray.tsx", added: 33, removed: 0 },
+	{ path: "test/elevation.test.ts", added: 27, removed: 0 },
+	{ path: "docs/components/tray.md", added: 60, removed: 0 },
+	{ path: "docs/motion.md", added: 60, removed: 0 },
+	{ path: "src/theme/roles.ts", added: 12, removed: 1 },
+	{ path: "web/src/components/approvals.tsx", added: 2, removed: 2 },
+	{ path: "web/src/block/kit.ts", added: 2, removed: 1 },
+];
+const RUN_THOUGHT = "这一步要把各组件里自绘的托盘换成 Tray：先读 ApprovalCard 里托盘那一段，找准开合标签的对应关系，再整段替换。";
+const RUN_REPORT = "看完了文档页、7 个组件页和 Agent Run 全屏页，每页都有深浅两种截图和量到的数字。最值得搬的是：完成的步骤折成一句话、在跑的那一步展开、插进来的话挂到它改变的那一步下面。详细的写在 findings.md。";
+
+const runSum = (steps: RunStepData[]) => steps.reduce((n, s) => n + s.calls.length, 0);
+const runSec = (steps: RunStepData[]) => steps.reduce((n, s) => n + s.sec, 0);
+
+/** A step's calls as ToolCallItem: upto – how many show; last – the status of the last one shown */
+function runCalls(s: RunStepData, k: number, upto = s.calls.length, last?: ToolCallItem["status"], since = 0): ToolCallItem[] {
+	return s.calls.slice(0, upto).map(([name, summary, sec, failed], j, all) => {
+		const status = last && j === all.length - 1 ? last : failed ? "failed" : "done";
+		return { id: `${k}-${j}`, name, summary, icon: RUN_ICONS[name], status, ...(status === "running" ? { since } : { ms: sec * 1000 }) };
+	});
+}
+
+/** The open step: its calls, your messages where they were read. from – the box the newest one waited in */
+function RunRows({ step, calls, from, thought }: { step: RunStepData; calls: ToolCallItem[]; from?: Record<number, DOMRect | true>; thought?: boolean }) {
+	const rows: ReactNode[] = [];
+	calls.forEach((c, j) => {
+		for (const [at, words] of step.notes ?? []) if (at === j) rows.push(<RunNote key={`n${at}`} text={words} from={from?.[at]} />);
+		rows.push(<ToolCall key={c.id} call={c} thought={thought && j === calls.length - 1 ? RUN_THOUGHT : undefined} args={`{ "command": "${c.summary}" }`} result={c.status === "done" ? "ok" : undefined} />);
+	});
+	for (const [at, words] of step.notes ?? []) if (at === calls.length && at > 0 && calls.at(-1)?.status !== "running") rows.push(<RunNote key={`n${at}`} text={words} from={from?.[at]} />);
+	return <>{rows}</>;
+}
+
+/** Finished steps, folded: they were done when the run appeared */
+const doneSteps = (steps: RunStepData[], open?: number) =>
+	steps.map((s, k) => {
+		const calls = runCalls(s, k);
+		return (
+			<RunStep key={k} n={k + 1} say={s.say} state="done" calls={calls} ms={s.sec * 1000} defaultOpen={open === k || undefined}>
+				<RunRows step={s} calls={calls} />
+			</RunStep>
+		);
+	});
+
+/** A at step 4: the fifth call runs – or, thinking, no call runs and the tail ticks */
+function RunNow({ thinking }: { thinking?: boolean }) {
+	const [t0] = useState(() => Date.now());
+	const s = RUN_A[3]!;
+	const calls = runCalls(s, 3, thinking ? 4 : 5, thinking ? undefined : "running", t0 - 2_400);
+	return (
+		<Run state="running" steps={4} since={t0 - 395_000}>
+			{doneSteps(RUN_A.slice(0, 3))}
+			<RunStep n={4} say={s.say} state="running" calls={calls} since={t0 - 86_000}>
+				<RunRows step={s} calls={calls} />
+				{thinking && <RunTail since={t0 - 6_000} />}
+			</RunStep>
+		</Run>
+	);
+}
+
+/** Your second message waits in its card; after a second and a half the call finishes and the message moves into step 4 */
+function RunRead() {
+	const [round, setRound] = useState(0);
+	return (
+		<div className="flex flex-col gap-3">
+			<RunReading key={round} />
+			<Button size="sm" variant="outline" className="self-start" onClick={() => setRound((r) => r + 1)}>再放一次</Button>
+		</div>
+	);
+}
+function RunReading() {
+	const [t0] = useState(() => Date.now());
+	const card = useRef<HTMLDivElement>(null);
+	const [from, setFrom] = useState<DOMRect | null>(null);
+	useEffect(() => {
+		const t = setTimeout(() => setFrom(card.current?.getBoundingClientRect() ?? null), 1500);
+		return () => clearTimeout(t);
+	}, []);
+	const s = RUN_A[3]!;
+	const calls = runCalls(s, 3, from ? 7 : 6, "running", from ? Date.now() : t0 - 1_200);
+	const waiting = s.notes?.[1]?.[1] ?? "";
+	return (
+		<div className="flex flex-col gap-3">
+			<Run state="running" steps={4} since={t0 - 400_000}>
+				{doneSteps(RUN_A.slice(0, 3))}
+				<RunStep n={4} say={s.say} state="running" calls={calls} since={t0 - 91_000}>
+					<RunRows step={s} calls={calls} from={from ? { 6: from } : undefined} />
+				</RunStep>
+			</Run>
+			{!from && (
+				<div ref={card} className="flex min-w-0 items-center gap-2 rounded-lg border bg-card py-1.5 pr-2 pl-2.5 text-md shadow-rest">
+					<span className="min-w-0 flex-1 truncate">{waiting}</span>
+					<span className="shrink-0 text-2xs text-muted-foreground">待读取</span>
+				</div>
+			)}
+		</div>
+	);
+}
+
+/** B, stopped at step 5: no call ran – the tail says so – or, during, its call was cut */
+function RunStopped({ during }: { during?: boolean }) {
+	const s = RUN_B[4]!;
+	const calls = runCalls(s, 4, 1, during ? "stopped" : undefined);
+	return (
+		<Run state="stopped" steps={5} ms={202_000} tools={runSum(RUN_B)}>
+			{doneSteps(RUN_B.slice(0, 4))}
+			<RunStep n={5} say={s.say} state="stopped" calls={calls}>
+				<RunRows step={s} calls={calls} />
+				{!during && <RunTail state="stopped" />}
+			</RunStep>
+		</Run>
+	);
+}
+
+/** A's step 16, open: a subagent reported while it ran */
+function RunReport() {
+	const s = RUN_A[15]!;
+	const calls = runCalls(s, 15);
+	return (
+		<Run state="done" steps={18} ms={runSec(RUN_A) * 1000} tools={runSum(RUN_A)} files={RUN_FILES} defaultOpen>
+			{doneSteps(RUN_A.slice(13, 15)).map((x, i) => <Fragment key={i}>{x}</Fragment>)}
+			<RunStep n={16} say={s.say} state="done" calls={calls} ms={s.sec * 1000} defaultOpen>
+				<ToolCall call={calls[0]!} />
+				<RunNote kind="event" icon={Bot} label="子代理回报" text="调研 agent 活动类组件：7 个组件页和 Agent Run 全屏页">
+					{RUN_REPORT}
+				</RunNote>
+				<ToolCall call={calls[1]!} />
+			</RunStep>
+		</Run>
+	);
+}
+
+/** The whole of A, playing on its own in a window that follows new output: steps finished in sight stay open, and fold once they scroll away */
+function RunLive() {
+	const [round, setRound] = useState(0);
+	return <RunPlay key={round} onEnd={() => setRound((r) => r + 1)} />;
+}
+function RunPlay({ onEnd }: { onEnd: () => void }) {
+	const steps = RUN_A;
+	const firsts = steps.reduce<number[]>((a, s, k) => [...a, k ? a[k - 1]! + steps[k - 1]!.calls.length : 0], []);
+	const total = runSum(steps);
+	const stepOf = (g: number) => firsts.findLastIndex((f) => f <= g);
+	const [t0] = useState(() => Date.now());
+	const [p, setP] = useState(0);
+	const [starts, setStarts] = useState<Record<number, number>>({ 0: Date.now() });
+	const [from, setFrom] = useState<Record<string, DOMRect | true>>({});
+	const done = p >= total;
+	const cur = stepOf(Math.min(p, total - 1));
+	const box = useRef<HTMLDivElement>(null);
+	const card = useRef<HTMLDivElement>(null);
+	const follow = useRef(true);
+	// Follow new output during the commit, so a message's landing spot is measured after the scroll
+	useLayoutEffect(() => {
+		const el = box.current;
+		if (el && follow.current) el.scrollTop = el.scrollHeight;
+	});
+	const noteAt = (g: number) => {
+		const k = stepOf(g);
+		return (steps[k]?.notes ?? []).find(([at]) => firsts[k]! + at === g && at > 0);
+	};
+	const waiting = !done ? noteAt(p + 1) : undefined;
+	useEffect(() => {
+		if (done) {
+			const t = setTimeout(onEnd, 6000);
+			return () => clearTimeout(t);
+		}
+		const next = p + 1;
+		const note = noteAt(next);
+		const t = setTimeout(
+			() => {
+				if (note) setFrom((f) => ({ ...f, [`${stepOf(next)}-${note[0]}`]: card.current?.getBoundingClientRect() ?? true }));
+				if (next < total && firsts.includes(next)) setStarts((s) => ({ ...s, [stepOf(next)]: Date.now() }));
+				setP(next);
+			},
+			350 + (firsts.includes(next) ? 250 : 0) + (note ? 800 : 0),
+		);
+		return () => clearTimeout(t);
+	}, [p]);
+	return (
+		<div className="flex h-[480px] max-w-xl flex-col overflow-hidden rounded-2xl border bg-background">
+			<div
+				ref={box}
+				onScroll={(e) => {
+					const el = e.currentTarget;
+					follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+				}}
+				className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3"
+			>
+				<div className="self-end rounded-2xl rounded-br-md bg-secondary px-4 py-2.5 text-sm text-secondary-foreground">做 1、2 两条</div>
+				<Run state={done ? "done" : "running"} steps={cur + 1} since={t0} ms={Date.now() - t0} tools={total} files={RUN_FILES}>
+					{steps.slice(0, cur + 1).map((s, k) => {
+						const here = k === cur && !done;
+						const shown = here ? p - firsts[k]! + 1 : s.calls.length;
+						const calls = runCalls(s, k, shown, here ? "running" : undefined, Date.now());
+						const fresh = Object.fromEntries((s.notes ?? []).map(([at]) => [at, from[`${k}-${at}`]]).filter(([, b]) => b)) as Record<number, DOMRect | true>;
+						return (
+							<RunStep key={k} n={k + 1} say={s.say} state={here ? "running" : "done"} calls={calls} since={starts[k]} ms={s.sec * 1000}>
+								<RunRows step={s} calls={calls} from={fresh} />
+							</RunStep>
+						);
+					})}
+				</Run>
+				{done && <p className="animate-in text-sm leading-relaxed fade-in duration-300">这一批做完了：`Tray` 和两档阴影都换上了，两个仓库的检查和测试都过了，还没提交。</p>}
+			</div>
+			<div className="flex flex-col gap-1.5 border-t p-2">
+				{waiting && (
+					<div ref={card} className="flex min-w-0 animate-in items-center gap-2 rounded-lg border bg-card py-1.5 pr-2 pl-2.5 text-md shadow-rest fade-in duration-200">
+						<span className="min-w-0 flex-1 truncate">{waiting[1]}</span>
+						<span className="shrink-0 text-2xs text-muted-foreground">待读取</span>
+					</div>
+				)}
+				<div className="rounded-2xl border bg-card px-3.5 py-2.5 text-md text-muted-foreground">{done ? "继续…" : "运行中，发的消息会插进这一轮"}</div>
+			</div>
+		</div>
+	);
+}
+
+/** Long words, at a phone's width */
+function RunLong() {
+	const say = "检查和测试都过了，截图也都看过了：手机宽度、电脑宽度，深色和浅色各一遍，没有走样的地方。下一步把组件库里所有自己画托盘的地方，包括确认卡片、待定事项、改写对照、连接卡片、提示词库、用量这几处，统一换成新的 Tray，再把它们各自的规格文档里关于托盘的那一段删掉，改成指向 tray.md。";
+	const calls: ToolCallItem[] = [{ id: "l1", name: "Bash", icon: SquareTerminal, summary: "cd ~/repos/ui && python3 tools/retag.py src/components/approval-card.tsx src/components/decision-inbox.tsx src/components/inline-diff.tsx", status: "done", ms: 1_400 }];
+	return (
+		<div className="max-w-[358px]">
+			<Run state="done" steps={1} ms={74_000} tools={1} files={RUN_FILES} agents={[{ id: "a1", label: "调研 agent 活动类组件：7 个组件页和 Agent Run 全屏页" }]} defaultOpen>
+				<RunStep n={1} say={say} state="done" calls={calls} ms={74_000} defaultOpen />
+			</Run>
+		</div>
+	);
 }

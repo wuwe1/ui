@@ -1,8 +1,8 @@
-// ToolCall and ToolCallGroup: an agent's tool calls, one line each – icon, name, summary, then a clock, a duration or 「失败」.
-// A line opens to its arguments and result, each with copy; a failure shows its message, with 「重试」 when the caller can retry.
+// ToolCall and ToolCallGroup: an agent's tool calls, one line each – icon, name, summary, then a clock, a duration, 「失败」 or 「已中断」.
+// A line opens to the agent's thought before the call, its arguments and result, each with copy; a failure shows its message, with 「重试」 when the caller can retry.
 // A group folds a run of calls under one header – the tools it used, how many, how long – and keeps running calls in sight while folded.
 // Lines, not cards: an agent turn can make dozens of calls.
-import { Check, CircleAlert, Copy, type LucideIcon, RotateCw, TriangleAlert, Wrench } from "lucide-react";
+import { Check, CircleAlert, CircleStop, Copy, type LucideIcon, RotateCw, TriangleAlert, Wrench } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Button } from "./button.tsx";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./collapsible.tsx";
@@ -23,7 +23,10 @@ export type ToolCallItem = ToolCallData & { icon?: LucideIcon };
 const SLIDE = "overflow-hidden ease-out-strong motion-safe:data-open:animate-collapsible-down motion-safe:data-closed:animate-collapsible-up";
 const FOCUS = "rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50";
 
-/** The line itself: icon, name, summary, and on the right a clock, the duration or 「失败」. Running – the summary shimmers. Under 1s – no duration, it's noise */
+/**
+ * The line itself: icon, name, summary, and on the right a clock, the duration, 「失败」 or 「已中断」. Running – the summary shimmers.
+ * Under 1s – no duration, it's noise. Interrupted by the person – gray, not a failure
+ */
 function ToolCallLine({ call, className }: { call: ToolCallItem; className?: string }) {
 	const { name, summary, status, since, ms } = call;
 	const I = call.icon ?? Wrench;
@@ -35,7 +38,18 @@ function ToolCallLine({ call, className }: { call: ToolCallItem; className?: str
 				{summary}
 			</Shimmer>
 			<span className="ml-auto shrink-0 pl-2 text-2xs text-muted-foreground tabular-nums">
-				{status === "running" ? since !== undefined && <Elapsed since={since} aria-hidden /> : status === "failed" ? <span className="text-destructive-strong">失败</span> : ms !== undefined && ms >= 1000 && elapsed(ms)}
+				{status === "running" ? (
+					since !== undefined && <Elapsed since={since} aria-hidden />
+				) : status === "failed" ? (
+					<span className="text-destructive-strong">失败</span>
+				) : status === "stopped" ? (
+					<span className="flex items-center gap-1">
+						<CircleStop className="size-3" aria-hidden />
+						已中断
+					</span>
+				) : (
+					ms !== undefined && ms >= 1000 && elapsed(ms)
+				)}
 			</span>
 		</span>
 	);
@@ -83,6 +97,8 @@ const plain = (text: string) => <pre className="max-h-72 overflow-auto rounded-m
 
 type ToolCallProps = {
 	call: ToolCallItem;
+	/** What the agent thought just before the call – shown first when the line opens */
+	thought?: ReactNode;
 	/** Arguments as text, shown open; null while they load */
 	args?: string | null;
 	/** Result as text, shown open; null while it loads */
@@ -106,7 +122,7 @@ type ToolCallProps = {
 };
 
 /** One call: the line opens to its error, arguments and result */
-function ToolCall({ call, args, result, error, renderCode, onRetry, onMore, open, defaultOpen, onOpenChange, actions, children, className }: ToolCallProps) {
+function ToolCall({ call, thought, args, result, error, renderCode, onRetry, onMore, open, defaultOpen, onOpenChange, actions, children, className }: ToolCallProps) {
 	const draw = (part: "args" | "result") => (text: string) => (renderCode ? renderCode(text, part) : plain(text));
 	return (
 		<Collapsible data-slot="tool-call" open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} className={className}>
@@ -119,6 +135,12 @@ function ToolCall({ call, args, result, error, renderCode, onRetry, onMore, open
 			{children}
 			<CollapsibleContent className={SLIDE}>
 				<div className="flex flex-col gap-2 pt-1 pb-2 pl-5.5">
+					{thought && (
+						<div className="flex flex-col gap-1">
+							<div className="flex h-5 items-center text-2xs text-muted-foreground">思考</div>
+							<div className="text-xs leading-relaxed break-words whitespace-pre-wrap text-muted-foreground">{thought}</div>
+						</div>
+					)}
 					{error && (
 						<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive-subtle py-2 pr-1.5 pl-3 text-xs text-destructive-strong">
 							<CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
