@@ -1,6 +1,6 @@
 // The spec beside the stories: docs/components/<file>.md for the page you're on – When to use, States, API reference and the rest.
 // An Outline of the sections runs down its right edge; a section title copies 「MessageActions › API reference」 so a request can point at it; in States, a story's name shows that state alone.
-// Wide screens get a column on the right; narrower ones a sheet. Base components copied from shadcn/ui as shipped have no spec.
+// Wide screens get a column on the right – drag its left edge to resize it; narrower ones a sheet. Base components copied from shadcn/ui as shipped have no spec.
 import { BookOpen } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import { Outline, useInView } from "../src/components/outline.tsx";
@@ -212,9 +212,83 @@ export function DocsToggle({ open, onOpenChange }: { open: boolean; onOpenChange
 	);
 }
 
+const WIDTH = { key: "showcase:docs-width", fallback: 384, min: 320, max: 720 };
+const widest = () => Math.min(WIDTH.max, Math.round(innerWidth * 0.6));
+const clampWidth = (w: number) => Math.round(Math.min(widest(), Math.max(WIDTH.min, w)));
+
+/** The column: drag its left edge to resize it – the width kept on this device; double-click goes back to the default, ← → step it */
+function Column({ children }: { children: ReactNode }) {
+	const [width, setWidth] = useState(() => Number(localStorage.getItem(WIDTH.key)) || WIDTH.fallback);
+	const aside = useRef<HTMLElement>(null);
+	const start = useRef({ x: 0, w: 0 });
+	const [drag, setDrag] = useState(false);
+	const keep = (w: number | null) => {
+		const v = w === null ? WIDTH.fallback : clampWidth(w);
+		setWidth(v);
+		if (aside.current) aside.current.style.width = `${v}px`;
+		w === null ? localStorage.removeItem(WIDTH.key) : localStorage.setItem(WIDTH.key, String(v));
+	};
+	// While dragging the whole page shows the resize cursor and nothing gets selected
+	useEffect(() => {
+		if (!drag) return;
+		document.documentElement.style.cursor = "col-resize";
+		document.documentElement.style.userSelect = "none";
+		return () => {
+			document.documentElement.style.cursor = "";
+			document.documentElement.style.userSelect = "";
+		};
+	}, [drag]);
+	const now = () => aside.current?.getBoundingClientRect().width ?? width;
+	return (
+		<aside ref={aside} className="relative shrink-0 border-l" style={{ width: Math.min(width, widest()) }} aria-label="Spec">
+			<div
+				role="separator"
+				aria-orientation="vertical"
+				aria-label="调整文档栏宽度"
+				aria-valuenow={width}
+				aria-valuemin={WIDTH.min}
+				aria-valuemax={widest()}
+				title="拖动调整宽度，双击恢复默认"
+				tabIndex={0}
+				data-drag={drag || undefined}
+				className="absolute inset-y-0 -left-1 z-20 w-2 cursor-col-resize touch-none outline-none after:absolute after:inset-y-0 after:left-[3px] after:w-0.5 after:transition-colors hover:after:bg-ring focus-visible:after:bg-ring data-drag:after:bg-ring"
+				onPointerDown={(e) => {
+					if (e.button !== 0) return;
+					e.preventDefault();
+					e.currentTarget.setPointerCapture(e.pointerId);
+					start.current = { x: e.clientX, w: now() };
+					setDrag(true);
+				}}
+				onPointerMove={(e) => {
+					// The column grows to the left; set straight on the element so the spec doesn't re-render on every move
+					if (drag && aside.current) aside.current.style.width = `${clampWidth(start.current.w - (e.clientX - start.current.x))}px`;
+				}}
+				onPointerUp={() => {
+					if (!drag) return;
+					setDrag(false);
+					keep(now());
+				}}
+				onPointerCancel={() => {
+					if (!drag) return;
+					setDrag(false);
+					if (aside.current) aside.current.style.width = `${width}px`;
+				}}
+				onDoubleClick={() => keep(null)}
+				onKeyDown={(e) => {
+					const d = e.key === "ArrowLeft" ? 32 : e.key === "ArrowRight" ? -32 : 0;
+					if (!d) return;
+					e.preventDefault();
+					keep(now() + d);
+				}}
+			/>
+			{children}
+		</aside>
+	);
+}
+
 /** The column on wide screens, a sheet on narrow ones */
 export function Docs({ page, states, onState, open, wide, onOpenChange }: { page: string; states: string[]; onState: (s: string) => void; open: boolean; wide: boolean; onOpenChange: (o: boolean) => void }) {
-	if (wide) return open ? <aside className="w-96 shrink-0 border-l" aria-label="Spec"><Spec page={page} states={states} onState={onState} /></aside> : null;
+	if (wide) return open ? <Column><Spec page={page} states={states} onState={onState} /></Column> : null;
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetContent side="right" className="w-[min(26rem,92vw)] gap-0 overflow-hidden p-0 sm:max-w-none">

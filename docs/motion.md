@@ -21,6 +21,7 @@ Motion answers a question a person has the moment something changes. Before pick
 | Where did it go – taken, or put back? | lift, sink |
 | Where did my message land? | slot-in |
 | Is it live right now? | pulse |
+| What's behind these marks? | spread | The compact marks are the full list, read here | Like a dock: the marks slide apart from where they sit, the one under the pointer staying put and biggest, the others smaller the further off – a bell 1.5 marks wide; their labels fade in over a backdrop that dims what's under them, no surface – 200ms `ease-out-strong`; the bell follows the pointer, and leaving gathers them back | They change at once | `Outline` |
 | Is it done with? | fold |
 | Is it done with – without losing my place? | tuck |
 
@@ -39,6 +40,7 @@ Motion answers a question a person has the moment something changes. Before pick
 | appear | A new line in a list – here, to stay | It fades in where it will stay, 200ms; nothing slides | The same | `Run` |
 | rise | A new surface came in at an edge | It fades in from 2–4px below, 200ms | Fade | Toasts; `Combobox` create row and empty text, still – they should `appear` |
 | open | A surface came from its trigger | Fade, 4px from the trigger's side, scale 0.98 → 1, 200ms; it closes with a 150ms fade | Fade | `Combobox`, `Popover`, `Command` |
+| spread | The compact marks are the full list, read here | Like a dock: the marks slide apart from where they sit, the one under the pointer staying put and biggest, the others smaller the further off – a bell 1.5 marks wide; their labels fade in over a backdrop that dims what's under them, no surface – 200ms `ease-out-strong`; the bell follows the pointer, and leaving gathers them back | They change at once | `Outline` | The compact marks are the full list, opened right here | Each mark slides from where it sat to its line, the one pointed at stays put; the surface grows out of the marks' bounds and the labels fade in beside them – 200ms `ease-out-strong`; it gathers back the same way in 150ms `ease-in-strong` | It fades in and out in place | `Outline` |
 | turn | Open or closed | A chevron turns 180° – 90° for a disclosure – in 200ms | At once | `Combobox` toggle, `Chevron` |
 | fold | Done with it, and still there if you look | It folds to a line or away – grid rows `1fr` → `0fr` with a fade, 200ms | At once | `ApprovalCard`, `DecisionInbox`, `ToolCallGroup` |
 | tuck | Done with it – and out of your way without moving what you read | It stays open while in view; once it has scrolled out of sight above, it folds at once and its height comes off the scroll position (`useTuck`) | The same | `Run`, `RunStep` |

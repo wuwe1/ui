@@ -1,12 +1,13 @@
 // Outline: a long scroll's table of contents as a column of ticks on its right edge – one tick per item (a message, a section, a story),
 // evenly spaced in order, the ones in view long and dark so you know where you are. It never pushes the content aside.
-// Desktop: hover the ticks for the whole list (a popover that doesn't steal focus), click a tick or a line to jump.
+// Desktop: hover the ticks and they spread like a dock under the pointer – each tick gets its label beside it, the one under the pointer big, the others smaller
+// the further off; no surface – the content under them dims behind a backdrop that fades out leftward, so the ticks need no gutter. Click a tick or a label to jump; leave and they gather back.
 // Phone: hold the ticks and drag – the item under your finger floats beside it, let go to jump (drag left first to cancel); a tap opens the list as a sheet.
-// Keyboard: focus the ticks, ↑ ↓ jump to the previous or next item, Enter opens the list.
+// Keyboard: focus the ticks, ↑ ↓ jump to the previous or next item, Enter spreads them from where you are – ↑ ↓ move the big one, Enter jumps, Esc gathers them back.
 // The host says what's in view (useInView, or its own reckoning) and does the jump.
 import { type KeyboardEvent, type PointerEvent, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Popsheet } from "./popsheet.tsx";
-import { indexAt, inView, marks, PAD, pitchOf } from "../lib/outline.ts";
+import { Popsheet, usePhone } from "./popsheet.tsx";
+import { DENSE, focusAt, indexAt, inView, marks, PAD, pitchOf, type SpreadRail, spreadAt, spreadRail } from "../lib/outline.ts";
 import { cn } from "../lib/utils.ts";
 
 export type OutlineItem = { id: string; label: string };
@@ -65,7 +66,7 @@ type OutlineProps = {
 	scroller?: RefObject<HTMLElement | null>;
 	/** Numbers before each line of the list */
 	numbered?: boolean;
-	/** Where the column goes: absolute, its full height – the ticks center in it */
+	/** Where the column goes: absolute, its full height – the ticks center in it. Spread, the labels reach 18rem left of it, over the content */
 	className?: string;
 };
 
@@ -83,9 +84,11 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 	}, []);
 	const [coarse] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(pointer: coarse)").matches);
 	const pitch = pitchOf(n, room, coarse);
+	const railTop = (room - (n * pitch + 2 * PAD)) / 2;
+	const tickY = (i: number) => railTop + PAD + (i + 0.5) * pitch;
 
 	const rail = useRef<HTMLButtonElement>(null);
-	// The pointed tick or line; from – the ticks (the list follows) or a line in the list
+	// The pointed tick or line; from – the ticks (the sheet's list follows) or a line in the sheet
 	const [pointed, setPointed] = useState<{ i: number; from: "rail" | "list" } | null>(null);
 	// A finger dragging: where the floating item sits (y, from the column's top), dragged away to cancel
 	const [drag, setDrag] = useState<{ y: number; away: boolean } | null>(null);
@@ -93,7 +96,7 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 	const last = useRef<{ i: number; away: boolean } | null>(null);
 	// What pressed last: a mouse click on the ticks jumps; a tap or a key opens the list
 	const kind = useRef("");
-	// Opened by keyboard: focus moves into the list. Opened by hover or tap: focus stays (someone may be typing)
+	// Opened by keyboard: focus moves into the sheet's list, or ↑ ↓ move the spread's focus. Opened by hover or tap: focus stays (someone may be typing)
 	const byKey = useRef(false);
 	// After a drag, the click the browser adds on release isn't a tap
 	const swallow = useRef(false);
@@ -101,47 +104,87 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 	// The item last jumped to: ↑ ↓ go on from it while it's in view (at the end of a scroll the view can't reach it)
 	const cursor = useRef<number | null>(null);
 
+	// Phones get the list as a sheet; wider screens spread the ticks under the pointer
+	const phone = usePhone();
 	const [open, setOpen] = useState(false);
+	const isOpen = useRef(false);
+	isOpen.current = open;
+	// Spread: the rail stretched out, fixed while open, and the focus on it – a fractional index, so the bell glides with the pointer
+	const [spread, setSpread] = useState<{ rail: SpreadRail; p: number } | null>(null);
+	// The pointer's last height over the ticks: hovering spreads them from there
+	const pointerY = useRef(0);
 	const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	useEffect(() => () => clearTimeout(timer.current), []);
-	const openChange = (o: boolean) => {
+	// The labels, and how wide the widest is at full size: the backdrop reaches just past it
+	const labels = useRef<HTMLDivElement>(null);
+	const [reach, setReach] = useState(0);
+	useLayoutEffect(() => {
+		if (!open || phone) return;
+		const all = [...(labels.current?.querySelectorAll<HTMLElement>("[data-label]") ?? [])];
+		setReach(Math.max(0, ...all.map((l) => l.offsetWidth)));
+	}, [open, phone, items]);
+	const top = () => box.current?.getBoundingClientRect().top ?? 0;
+	/** Open – spread from item i at y, or by key or tap from where you are; or close */
+	const openChange = (o: boolean, from?: { i: number; y: number }) => {
+		if (o && !isOpen.current && !phone) {
+			const i = from?.i ?? where() ?? 0;
+			const r = spreadRail(n, i, from?.y ?? tickY(i), room);
+			setSpread({ rail: r, p: from ? focusAt(from.y, r, n) : i });
+		}
 		setOpen(o);
 		// The line under the pointer when the list closes stops being lit
 		if (!o) setPointed((p) => (p?.from === "list" ? null : p));
 	};
-	// Hover the ticks a moment to open; leave both the ticks and the list a moment to close
+	// Hover the ticks a moment to spread them; leave the column a moment to gather them back
 	const toggleLater = (o: boolean, ms: number) => {
 		clearTimeout(timer.current);
 		timer.current = setTimeout(() => {
-			if (o) byKey.current = false;
-			openChange(o);
+			if (!o) return openChange(false);
+			if (isOpen.current) return;
+			byKey.current = false;
+			const y = pointerY.current - top();
+			openChange(true, { i: Math.max(0, Math.min(n - 1, (y - railTop - PAD) / (pitch || 1) - 0.5)), y });
 		}, ms);
 	};
-	const enter = (e: PointerEvent) => { if (e.pointerType === "mouse") toggleLater(true, open ? 0 : 150); };
+	const enter = (e: PointerEvent) => {
+		if (e.pointerType !== "mouse") return;
+		pointerY.current = e.clientY;
+		toggleLater(true, open ? 0 : 150);
+	};
 	const leave = (e: PointerEvent) => { if (e.pointerType === "mouse") toggleLater(false, 200); };
+	// Spread by key or tap: a press anywhere else gathers it back
+	useEffect(() => {
+		if (!open || phone) return;
+		const away = (e: globalThis.PointerEvent) => {
+			if (!box.current?.contains(e.target as Node)) openChange(false);
+		};
+		document.addEventListener("pointerdown", away, true);
+		return () => document.removeEventListener("pointerdown", away, true);
+	}, [open, phone]);
 
 	const at = (y: number) => indexAt(y - (rail.current?.getBoundingClientRect().top ?? 0), pitch, n);
+	/** Read an item out: the first line only, clipped – a long message read out whole would drown it */
+	const say = (i: number) => {
+		const line = items[i]?.label.trim().split("\n")[0] ?? "";
+		setSaid(`${numbered ? `第 ${i + 1} 条：` : ""}${line.length > 80 ? `${line.slice(0, 80)}…` : line}`);
+	};
 	const jump = (i: number) => {
-		const it = items[i];
-		if (!it) return;
+		if (!items[i]) return;
 		clearTimeout(timer.current);
 		setOpen(false);
 		setPointed(null);
-		// Say the first line only, clipped – a long message read out whole would drown the jump
-		const line = it.label.trim().split("\n")[0] ?? "";
-		setSaid(`${numbered ? `第 ${i + 1} 条：` : ""}${line.length > 80 ? `${line.slice(0, 80)}…` : line}`);
+		say(i);
 		cursor.current = i;
 		onJump(i);
 	};
 	/** A finger at (x, y): point that tick, float that item */
 	const follow = (x: number, y: number) => {
 		const r = rail.current?.getBoundingClientRect();
-		const top = box.current?.getBoundingClientRect().top ?? 0;
 		const i = at(y);
 		const away = !!r && x < r.left - AWAY;
 		last.current = { i, away };
 		setPointed({ i, from: "rail" });
-		setDrag({ y: y - top, away });
+		setDrag({ y: y - top(), away });
 	};
 	const end = () => {
 		const t = touch.current;
@@ -167,6 +210,7 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 	};
 	const move = (e: PointerEvent<HTMLButtonElement>) => {
 		if (e.pointerType === "mouse") {
+			pointerY.current = e.clientY;
 			const i = at(e.clientY);
 			return setPointed((p) => (p?.i === i && p.from === "rail" ? p : { i, from: "rail" }));
 		}
@@ -193,13 +237,21 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 		}
 		end();
 	};
-	// ↑ ↓ on the ticks: the previous or next item from the one in view
+	// ↑ ↓ on the ticks: the previous or next item from the one in view. Spread by key: they move its focus instead, Enter jumps there, Esc gathers it
 	const key = (e: KeyboardEvent<HTMLButtonElement>) => {
-		const here = where() ?? -1;
+		const spreadByKey = open && !phone && spread;
+		if (spreadByKey && e.key === "Escape") {
+			e.preventDefault();
+			return openChange(false);
+		}
+		const here = spreadByKey ? Math.round(spread.p) : (where() ?? -1);
 		const i = e.key === "ArrowDown" ? here + 1 : e.key === "ArrowUp" ? here - 1 : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : null;
 		if (i === null) return;
 		e.preventDefault();
-		jump(Math.max(0, Math.min(n - 1, i)));
+		const to = Math.max(0, Math.min(n - 1, i));
+		if (!spreadByKey) return jump(to);
+		setSpread({ ...spread, p: to });
+		say(to);
 	};
 
 	const lit = (i: number) => !!view && i >= view.a && i <= view.b;
@@ -210,75 +262,128 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 	// The floating item sits above-left of the finger; near the top, below-left
 	const above = !!drag && drag.y > 72;
 	if (n < 1) return null;
-	return (
-		// The column takes the full height the ticks may use (no pointer), the ticks center in it
-		<div ref={box} data-slot="outline" className={cn("pointer-events-none flex items-center", className)}>
-			<span role="status" className="sr-only">{said}</span>
-			<Popsheet
-				title={title}
-				description={description}
-				side="left"
-				open={open}
-				onOpenChange={openChange}
-				className="max-h-[min(32rem,70vh)] w-80"
-				contentProps={{
-					onPointerEnter: enter,
-					onPointerLeave: leave,
-					// The list focuses where you are itself (opened by keyboard), not its first line
-					onOpenAutoFocus: (e) => e.preventDefault(),
-					onCloseAutoFocus: (e) => { if (!byKey.current) e.preventDefault(); },
-				}}
-				trigger={
-					<button
-						ref={rail}
-						type="button"
-						aria-label={description ? `${title}：${description}` : title}
-						aria-keyshortcuts="ArrowUp ArrowDown"
-						className="pointer-events-auto relative w-6 touch-none rounded-md outline-hidden select-none focus-visible:ring-2 focus-visible:ring-ring"
-						style={{ height: n * pitch + 2 * PAD }}
-						onPointerEnter={enter}
-						onPointerLeave={(e) => {
-							leave(e);
-							if (e.pointerType === "mouse") setPointed(null);
-						}}
-						onPointerDown={down}
-						onPointerMove={move}
-						onPointerUp={up}
-						onPointerCancel={end}
-						onKeyDown={key}
-						onWheel={(e) => scroller?.current?.scrollBy({ top: e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY })}
-						onClick={(e) => {
-							if (swallow.current) {
-								swallow.current = false;
-								return e.preventDefault();
-							}
-							// A mouse click jumps to the tick under it, without opening the list; a tap or a key (detail 0) opens it
-							if (e.detail !== 0 && kind.current === "mouse") {
-								e.preventDefault();
-								return jump(at(e.clientY));
-							}
-							byKey.current = e.detail === 0;
-						}}
-					>
-						{marks(n, pitch, lit, hot?.i ?? null).map((i) => (
-							<span
-								key={items[i]?.id ?? i}
-								className={cn(
-									"absolute right-1 h-0.5 -translate-y-1/2 rounded-full transition-[width,background-color] duration-150 motion-reduce:transition-none",
-									hot?.i === i ? "w-5 bg-foreground" : lit(i) ? "w-4 bg-muted-foreground" : "w-1.5 bg-muted-foreground/40",
-								)}
-								style={{ top: PAD + (i + 0.5) * pitch }}
-							/>
-						))}
-					</button>
+	// Spread: where each item sits around the focus; at rest, on its tick
+	const lay = open && spread && !phone ? spreadAt(n, spread.p, spread.rail, room) : null;
+	const focus = lay && spread ? Math.round(spread.p) : null;
+	const drawn = new Set(marks(n, pitch, lit, hot?.i ?? null));
+	const ticks = (
+		<button
+			ref={rail}
+			type="button"
+			aria-label={description ? `${title}：${description}` : title}
+			aria-keyshortcuts="ArrowUp ArrowDown"
+			aria-expanded={phone ? undefined : open}
+			className={cn("pointer-events-auto relative w-6 touch-none rounded-md outline-hidden select-none focus-visible:ring-2 focus-visible:ring-ring", lay && "ring-0!")}
+			style={{ height: n * pitch + 2 * PAD }}
+			onPointerEnter={enter}
+			onPointerLeave={(e) => {
+				leave(e);
+				if (e.pointerType === "mouse") setPointed(null);
+			}}
+			onPointerDown={down}
+			onPointerMove={move}
+			onPointerUp={up}
+			onPointerCancel={end}
+			onKeyDown={key}
+			onBlur={() => { if (byKey.current && isOpen.current && !phone) openChange(false); }}
+			onWheel={(e) => scroller?.current?.scrollBy({ top: e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY })}
+			onClick={(e) => {
+				if (swallow.current) {
+					swallow.current = false;
+					return e.preventDefault();
 				}
-			>
-				<List items={items} numbered={numbered} lit={lit} current={where()} focus={byKey.current} pointed={hot} onPoint={setPointed} onPick={jump} />
-			</Popsheet>
+				// A mouse click jumps to the tick under it, without opening the list; a tap or a key (detail 0) opens it
+				if (e.detail !== 0 && kind.current === "mouse") {
+					e.preventDefault();
+					return jump(at(e.clientY));
+				}
+				byKey.current = e.detail === 0;
+				// On a phone the sheet's trigger opens it. Spread by key, Enter jumps to its focus
+				if (phone) return;
+				if (open && focus !== null) return jump(focus);
+				openChange(true);
+			}}
+		/>
+	);
+	return (
+		// The column: the full height the ticks may use, the ticks' width. No pointer until spread
+		<div ref={box} data-slot="outline" className={cn("pointer-events-none flex w-6 items-center justify-end", className)}>
+			<span role="status" className="sr-only">{said}</span>
+			{/* Spread: the content under the labels dims and blurs, just past the widest label, fading out leftward – no edge, and the labels read at full strength over it */}
+			{!phone && (
+				<div
+					aria-hidden
+					className={cn(
+						"absolute inset-y-0 right-0 bg-background/90 backdrop-blur-[3px] transition-opacity [mask-image:linear-gradient(to_left,black_calc(100%-2.5rem),transparent)]",
+						lay ? "opacity-100 duration-200 ease-out-strong" : "opacity-0 duration-150 ease-in-strong",
+					)}
+					// The ticks' 2rem, the widest label, a little air, then 2.5rem of fade
+					style={{ width: `calc(${reach}px + 5rem)` }}
+				/>
+			)}
+			{/* Every item: a tick at the right edge and, spread, its label beside it – big where the pointer is, small further off. Drawn for the eye only */}
+			<div ref={labels} aria-hidden className="absolute inset-y-0 right-0 w-72">
+				{items.map((it, i) => {
+					const near = lay?.near[i] ?? 0;
+					const isHot = lay ? focus === i : hot?.i === i;
+					// A label shows where there's room for it; packed, only those near the focus
+					const show = lay ? Math.max(0, Math.min(1, ((lay.gap[i] ?? 0) - 9) / 5)) : 0;
+					return (
+						<div
+							key={it.id}
+							className="absolute top-0 right-0 flex h-0 w-full items-center justify-end transition-transform duration-200 ease-out-strong motion-reduce:transition-none"
+							style={{ transform: `translateY(${lay?.y[i] ?? tickY(i)}px)` }}
+						>
+							{!phone && (
+								<span
+									data-label
+									className={cn(
+										"mr-8 min-w-0 origin-right truncate text-sm leading-none transition-[scale,opacity,color] duration-200 ease-out-strong motion-reduce:transition-none",
+										isHot ? "font-medium text-foreground" : lit(i) ? "text-foreground/75" : "text-muted-foreground",
+									)}
+									style={{ scale: SMALL + (1 - SMALL) * near, opacity: show }}
+								>
+									{numbered && <span className="mr-1.5 text-2xs text-muted-foreground tabular-nums">{i + 1}</span>}
+									{it.label.split("\n")[0]}
+								</span>
+							)}
+							<span
+								className={cn(
+									"absolute top-0 right-1 h-0.5 -translate-y-1/2 rounded-full transition-[width,background-color,opacity] duration-150 motion-reduce:transition-none",
+									tick(isHot, lit(i)),
+									!(lay ? (lay.gap[i] ?? 0) >= DENSE || isHot || lit(i) : drawn.has(i)) && "opacity-0",
+								)}
+							/>
+						</div>
+					);
+				})}
+			</div>
+			{phone ? (
+				<Popsheet title={title} description={description} open={open} onOpenChange={openChange} trigger={ticks}>
+					<List items={items} numbered={numbered} lit={lit} current={where()} focus={byKey.current} pointed={hot} onPoint={setPointed} onPick={jump} />
+				</Popsheet>
+			) : (
+				ticks
+			)}
+			{/* Spread: the whole column follows the pointer – the item under it is the big one – and a click jumps there */}
+			{lay && spread && (
+				<div
+					className="pointer-events-auto absolute inset-y-0 right-0 w-72 cursor-pointer"
+					onPointerEnter={enter}
+					onPointerLeave={leave}
+					onPointerMove={(e) => {
+						if (e.pointerType !== "mouse") return;
+						const p = focusAt(e.clientY - top(), spread.rail, n);
+						setSpread((s) => (s && s.p !== p ? { ...s, p } : s));
+					}}
+					onClick={(e) => jump(Math.round(focusAt(e.clientY - top(), spread.rail, n)))}
+					onWheel={(e) => scroller?.current?.scrollBy({ top: e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY })}
+				/>
+			)}
 			{/* A finger dragging: the item floats above-left of it, clear of the thumb */}
 			{drag && pointed && (
 				<div
-					className={cn("pointer-events-none absolute right-full mr-2 w-max max-w-[min(18rem,calc(100vw-4rem))] rounded-lg bg-popover px-3 py-2 text-md text-popover-foreground shadow-float ring-1 ring-foreground/10", above && "-translate-y-full")}
+					className={cn("pointer-events-none absolute right-8 w-max max-w-[min(18rem,calc(100vw-4rem))] rounded-lg bg-popover px-3 py-2 text-md text-popover-foreground shadow-float ring-1 ring-foreground/10", above && "-translate-y-full")}
 					style={{ top: above ? drag.y - 8 : drag.y + 28 }}
 				>
 					{drag.away ? (
@@ -295,7 +400,22 @@ function Outline({ items, view, onJump, title, description, scroller, numbered =
 	);
 }
 
-/** The whole list: lines in view are dark, the pointed one lit and scrolled into view; on opening it scrolls to where you are (and focuses it, opened by keyboard). ↑ ↓ Home End move focus */
+/** Spread, the labels far from the pointer are this much of the one under it: 11px against 14 */
+const SMALL = 11 / 14;
+
+/** A tick's look: pointed, in view, or neither */
+const tick = (hot: boolean, lit: boolean) => (hot ? "w-5 bg-foreground" : lit ? "w-4 bg-muted-foreground" : "w-1.5 bg-muted-foreground/40");
+
+/** ↑ ↓ Home End move focus among a list's lines */
+function moveFocus(e: KeyboardEvent<HTMLElement>, lines: HTMLElement[]) {
+	const i = lines.indexOf(document.activeElement as HTMLElement);
+	const to = e.key === "ArrowDown" ? i + 1 : e.key === "ArrowUp" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? lines.length - 1 : null;
+	if (to === null) return;
+	e.preventDefault();
+	lines[Math.max(0, Math.min(lines.length - 1, to))]?.focus();
+}
+
+/** The whole list, in a phone's sheet: lines in view are dark, the pointed one lit and scrolled into view; on opening it scrolls to where you are (and focuses it, opened by keyboard). ↑ ↓ Home End move focus */
 function List({ items, numbered, lit, current, focus, pointed, onPoint, onPick }: { items: OutlineItem[]; numbered: boolean; lit: (i: number) => boolean; current: number | null; focus: boolean; pointed: { i: number; from: "rail" | "list" } | null; onPoint: (p: { i: number; from: "list" } | null) => void; onPick: (i: number) => void }) {
 	const nav = useRef<HTMLElement>(null);
 	const item = (i: number) => nav.current?.children[i] as HTMLElement | undefined;
@@ -309,16 +429,8 @@ function List({ items, numbered, lit, current, focus, pointed, onPoint, onPick }
 	useEffect(() => {
 		if (follow !== null) item(follow)?.scrollIntoView({ block: "nearest" });
 	}, [follow]);
-	const key = (e: KeyboardEvent<HTMLElement>) => {
-		const all = [...(nav.current?.children ?? [])] as HTMLElement[];
-		const i = all.indexOf(document.activeElement as HTMLElement);
-		const to = e.key === "ArrowDown" ? i + 1 : e.key === "ArrowUp" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? all.length - 1 : null;
-		if (to === null) return;
-		e.preventDefault();
-		all[Math.max(0, Math.min(all.length - 1, to))]?.focus();
-	};
 	return (
-		<nav ref={nav} onKeyDown={key} className="-mx-1 flex flex-col gap-0.5" onPointerLeave={(e) => e.pointerType === "mouse" && onPoint(null)}>
+		<nav ref={nav} onKeyDown={(e) => moveFocus(e, [...(nav.current?.children ?? [])] as HTMLElement[])} className="-mx-1 flex flex-col gap-0.5" onPointerLeave={(e) => e.pointerType === "mouse" && onPoint(null)}>
 			{items.map((it, i) => (
 				<button
 					key={it.id}

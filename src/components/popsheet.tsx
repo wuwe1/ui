@@ -14,7 +14,7 @@ const subscribe = (f: () => void) => {
 	m.addEventListener("change", f);
 	return () => m.removeEventListener("change", f);
 };
-const usePhone = () => useSyncExternalStore(subscribe, () => matchMedia(PHONE).matches, () => false);
+export const usePhone = () => useSyncExternalStore(subscribe, () => matchMedia(PHONE).matches, () => false);
 
 /** Esc inside an element that handles it itself doesn't close the panel */
 const keepLocalEscape = (e: KeyboardEvent) => {
