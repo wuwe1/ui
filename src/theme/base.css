@@ -24,6 +24,12 @@
 	body {
 		@apply bg-background text-foreground;
 	}
+	/* Every native scrollbar: thin, a token thumb on no track. Set on each element, so a .dark block gets its own.
+	 * Shown or hidden is the OS's – an overlay bar on iOS and macOS fades out; ScrollArea draws one that stays */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: var(--scrollbar) transparent;
+	}
 	button:not(:disabled),
 	[role="button"]:not(:disabled) {
 		cursor: pointer;

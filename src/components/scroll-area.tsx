@@ -4,11 +4,13 @@ import * as React from "react"
 import { cn } from "cn"
 import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 
+/** orientation – which way it scrolls; horizontal with type="auto" keeps the bar showing whenever it can scroll, phones too */
 function ScrollArea({
   className,
   children,
+  orientation = "vertical",
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & { orientation?: "vertical" | "horizontal" | "both" }) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
@@ -21,7 +23,8 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar />
+      {orientation !== "horizontal" && <ScrollBar />}
+      {orientation !== "vertical" && <ScrollBar orientation="horizontal" />}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
@@ -45,7 +48,7 @@ function ScrollBar({
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full bg-border"
+        className="relative flex-1 rounded-full bg-scrollbar"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   )

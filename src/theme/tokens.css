@@ -28,6 +28,7 @@
 	--input: light-dark(oklch(0.6472 0 0), oklch(0.5211 0.003 286));
 	--field: light-dark(oklch(0.9219 0 0), oklch(0.302 0.003 286));
 	--sidebar-border: light-dark(oklch(0.9219 0 0), oklch(0.4019 0.003 286));
+	--scrollbar: light-dark(oklch(0 0 0 / 0.2), oklch(1 0 0 / 0.24));
 	--ring: light-dark(oklch(0.708 0 0), oklch(0.556 0.003 286));
 	--sidebar-ring: light-dark(oklch(0.708 0 0), oklch(0.556 0.003 286));
 	--shade-rest: light-dark(oklch(0 0 0 / 0.05), oklch(0 0 0 / 0.3));
@@ -92,6 +93,7 @@
 	--input: light-dark(oklch(0.6472 0.008 75), oklch(0.5212 0.006 60));
 	--field: light-dark(oklch(0.9219 0.008 75), oklch(0.302 0.006 60));
 	--sidebar-border: light-dark(oklch(0.9219 0.008 75), oklch(0.4019 0.006 60));
+	--scrollbar: light-dark(oklch(0 0 0 / 0.2), oklch(1 0 0 / 0.24));
 	--ring: light-dark(oklch(0.708 0.008 75), oklch(0.556 0.006 60));
 	--sidebar-ring: light-dark(oklch(0.708 0.008 75), oklch(0.556 0.006 60));
 	--shade-rest: light-dark(oklch(0 0 0 / 0.05), oklch(0 0 0 / 0.3));

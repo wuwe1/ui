@@ -37,6 +37,8 @@ const SURFACE: Record<Mode, { sidebar: number; background: number; card: number;
 };
 /** Translucent layers – black in light mode, white in dark – so they show on any surface. muted and secondary inset, accent hovers */
 const OVERLAY: Record<Mode, { muted: number; accent: number }> = { light: { muted: 0.039, accent: 0.051 }, dark: { muted: 0.051, accent: 0.071 } };
+/** Scrollbar thumbs, translucent like the layers: plain to see on any surface, quieter than a line of text */
+const SCROLLBAR: Record<Mode, number> = { light: 0.2, dark: 0.24 };
 /** Shadows – black at these opacities. Dark surfaces need far more for a shadow to show at all. rest – under a card resting in a tray; near and far – the tight and the wide part of a floating shadow */
 const SHADE: Record<Mode, { rest: number; near: number; far: number }> = { light: { rest: 0.05, near: 0.06, far: 0.16 }, dark: { rest: 0.3, near: 0.3, far: 0.55 } };
 /** subtle – a signal's tint for diff lines and badge fills: the solid shade at this opacity */
@@ -107,6 +109,7 @@ export function roles(theme: ThemeInput): Role[] {
 		{ name: "input", doc: "Edges of fields – inputs, textareas, selects", value: by((m) => line(m, s(m).field, LINE.input, under(m))), needs: [LINE.input, LINED] },
 		{ name: "field", doc: "Fills of fields and switch tracks, translucent (bg-field/30); a selected tab's edge", value: by((m) => n(m, s(m).field)) },
 		{ name: "sidebar-border", doc: "Dividers in the sidebar", value: by((m) => line(m, s(m).sidebarBorder, LINE.divider[m], [n(m, s(m).sidebar)])), needs: [LINE.divider, ["sidebar"]] },
+		{ name: "scrollbar", doc: "Scrollbar thumbs – native ones and ScrollArea's, translucent", value: by((m) => gray(theme.neutral[m], ink(m), SCROLLBAR[m])) },
 		{ name: "ring", doc: "Focus ring", value: by((m) => n(m, s(m).ring)) },
 		{ name: "sidebar-ring", doc: "Focus ring in the sidebar", value: by((m) => n(m, s(m).ring)) },
 		{ name: "shade-rest", doc: "Shadow under what rests on a surface – a card in a tray", value: by((m) => gray(theme.neutral[m], 0, SHADE[m].rest)) },

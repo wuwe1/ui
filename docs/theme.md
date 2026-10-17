@@ -25,6 +25,7 @@ Components use only the last layer: `bg-background`, `text-muted-foreground`, `t
 - Lines – solved the same way, on every surface they sit on: `input` 3:1 in both modes (WCAG 1.4.11); `border` and `sidebar-border` 1.8:1 in dark, as drawn in light – about 1.2:1
 - Fields fill with `field`, the gray inputs had before, so the stronger edge leaves the fill alone
 - Layers – `muted` and `accent` are translucent black or white, so they show on any surface
+- Scrollbars – `scrollbar` is translucent the same way. `base.css` gives every native bar that thumb, thin, on no track; whether it shows is the OS's. `ScrollArea` draws one that stays
 - Signals – three shades: solid for dots and icons, `-strong` for text, `-subtle` for tints
 - Wide gamut – colors inside P3 ship as they are; only colors beyond P3 are pulled in
 
