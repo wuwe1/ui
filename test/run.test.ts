@@ -38,4 +38,5 @@ test("runLabel: a status – running, done, or where it was interrupted", () => 
 	assert.equal(runLabel("running", 0), "正在执行第 1 步");
 	assert.equal(runLabel("done", 18), "已完成 18 步");
 	assert.equal(runLabel("stopped", 5), "已中断于第 5 步");
+	assert.equal(runLabel("failed", 5), "出错于第 5 步");
 });

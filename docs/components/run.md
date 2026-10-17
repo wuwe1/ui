@@ -16,7 +16,7 @@ One turn of an agent's work as a line that opens level by level: the run, its st
 ## Anatomy
 
 Run
-- Chevron, then the status: 「正在执行第 4 步」 and a clock, 「已完成 18 步」, or ⏹ 「已中断于第 5 步」; then the time
+- Chevron, then the status: 「正在执行第 4 步」 and a clock, 「已完成 18 步」, ⏹ 「已中断于第 5 步」, or ⚠ 「出错于第 5 步」 in red when an error ended it; then the time
 - Once it ends: 「58 次调用」 with 「1 次失败」 in red, 「改动 16 个文件」, 「2 个子代理」 – the last two open their lists
 - The steps under a hairline
 
@@ -36,7 +36,7 @@ RunTail
 
 ## States
 
-Running, Thinking, Your message read, Done – folded, Done – open, Some failed, Stopped while thinking, Stopped during a call, Subagent report, Long, Many, Live
+Running, Thinking, Your message read, Done – folded, Done – open, Some failed, Stopped while thinking, Stopped during a call, Failed, Subagent report, Long, Many, Live
 
 ## API reference
 
@@ -44,7 +44,7 @@ Run
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `state` | `"running" \| "done" \| "stopped"` | – | |
+| `state` | `"running" \| "done" \| "stopped" \| "failed"` | – | failed – an error ended it, not the person |
 | `steps` | `number` | – | Steps so far |
 | `since` | `number` | – | Running: the start, ms since the epoch – the clock |
 | `ms` | `number` | – | Done or stopped: how long it ran |
@@ -72,7 +72,7 @@ RunNote: `kind` (`"you"` or `"event"`), `text`, `icon` and `label` for an event,
 
 RunTail: `state` (`"thinking"` or `"stopped"`), `since`, `children` for other words.
 
-Folding, when not controlled: running and stopped are open. A run or step that finished in front of the person stays open until it has scrolled out of sight above, then folds. One that was finished when it mounted starts folded.
+Folding, when not controlled: running, stopped and failed are open. A run or step that finished in front of the person stays open until it has scrolled out of sight above, then folds. One that was finished when it mounted starts folded.
 
 ## Keyboard interactions
 

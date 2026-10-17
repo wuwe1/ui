@@ -18,10 +18,12 @@ export function stepTitle(say: string): string {
 	return last.replace(/`|\*\*/g, "").replace(/[。：:.]$/, "").trim();
 }
 
-export type RunState = "running" | "done" | "stopped";
+/** failed – an error ended it, not the person */
+export type RunState = "running" | "done" | "stopped" | "failed";
 
-/** The header's status: 「正在执行第 3 步」, 「已完成 18 步」, 「已中断于第 5 步」 */
+/** The header's status: 「正在执行第 3 步」, 「已完成 18 步」, 「已中断于第 5 步」, 「出错于第 5 步」 */
 export function runLabel(state: RunState, steps: number): string {
 	const n = Math.max(steps, 1);
-	return state === "running" ? `正在执行第 ${n} 步` : state === "stopped" ? `已中断于第 ${n} 步` : `已完成 ${steps} 步`;
+	if (state === "done") return `已完成 ${steps} 步`;
+	return state === "running" ? `正在执行第 ${n} 步` : state === "stopped" ? `已中断于第 ${n} 步` : `出错于第 ${n} 步`;
 }

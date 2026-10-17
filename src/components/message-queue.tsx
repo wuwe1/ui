@@ -36,11 +36,14 @@ type Props = {
 	withdrawing?: string[];
 	/** Start opened into a list */
 	defaultOpen?: boolean;
+	/** A message the agent took, with its card's box just before it goes. Given – the card leaves at once: the host carries it on, into the step that read it */
+	onTake?: (m: QueuedMessage, box: DOMRect | null) => void;
 	label?: string;
 	className?: string;
 };
 
-function MessageQueue({ items, onWithdraw, withdrawing = [], defaultOpen = false, label = "排队的消息", className }: Props) {
+function MessageQueue({ items, onWithdraw, withdrawing = [], defaultOpen = false, onTake, label = "排队的消息", className }: Props) {
+	const root = useRef<HTMLElement>(null);
 	// Ids once pulled back stay known: the host may drop an id from withdrawing in the same update that drops its message
 	const pulled = useRef(new Set<string>());
 	for (const id of withdrawing) pulled.current.add(id);
@@ -57,7 +60,12 @@ function MessageQueue({ items, onWithdraw, withdrawing = [], defaultOpen = false
 		const has = new Set(items.map((m) => m.id));
 		const added = items.filter((m) => !had.has(m.id));
 		const left = was.filter((m) => !has.has(m.id));
-		setShown((prev) => settle(prev, items, pulled.current));
+		const taken = left.filter((m) => !pulled.current.has(m.id));
+		if (onTake) for (const m of taken) onTake(m, root.current?.querySelector(`[data-queued="${CSS.escape(m.id)}"]`)?.getBoundingClientRect() ?? null);
+		setShown((prev) => {
+			const next = settle(prev, items, pulled.current);
+			return onTake ? next.filter((s) => s.out !== "taken") : next;
+		});
 		const latest = added.at(-1);
 		if (latest) {
 			setFresh(new Set(added.map((m) => m.id)));
@@ -121,6 +129,7 @@ function MessageQueue({ items, onWithdraw, withdrawing = [], defaultOpen = false
 
 	return (
 		<section
+			ref={root}
 			data-slot="message-queue"
 			aria-label={label}
 			className={cn("min-w-0 [--away:10px] motion-reduce:[--away:0px]", className)}
@@ -136,7 +145,7 @@ function MessageQueue({ items, onWithdraw, withdrawing = [], defaultOpen = false
 					{open ? (
 						<ol className="flex flex-col gap-1">
 							{shown.map((s) => (
-								<li key={s.m.id} inert={!!s.out} className={cn(MOVE, s.out && "ease-in-strong", fresh.has(s.m.id) && ENTER)} style={{ opacity: s.out ? 0 : 1, translate: `0 ${off(s)}` }}>
+								<li key={s.m.id} data-queued={s.m.id} inert={!!s.out} className={cn(MOVE, s.out && "ease-in-strong", fresh.has(s.m.id) && ENTER)} style={{ opacity: s.out ? 0 : 1, translate: `0 ${off(s)}` }}>
 									<div className={cn(CARD, "items-start")}>
 										<div className="flex min-w-0 flex-1 flex-col gap-1.5 py-1">
 											<button ref={s.m.id === last ? newest : undefined} type="button" aria-expanded onClick={() => flip(false)} className={TEXT}>
@@ -162,6 +171,7 @@ function MessageQueue({ items, onWithdraw, withdrawing = [], defaultOpen = false
 								return (
 									<div
 										key={s.m.id}
+										data-queued={s.m.id}
 										inert={!front}
 										aria-hidden={!front || undefined}
 										className={cn("col-start-1 row-start-1 min-w-0 self-end", MOVE, s.out && "ease-in-strong", fresh.has(s.m.id) && ENTER)}

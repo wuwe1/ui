@@ -254,6 +254,14 @@ export const STORIES: Record<string, Story[]> = {
 		},
 		{ name: "Stopped while thinking", render: () => <RunStopped /> },
 		{ name: "Stopped during a call", render: () => <RunStopped during /> },
+		{
+			name: "Failed",
+			render: () => (
+				<Run state="failed" steps={3} ms={48_000} tools={runSum(RUN_A.slice(0, 3))} defaultOpen>
+					{doneSteps(RUN_A.slice(0, 3))}
+				</Run>
+			),
+		},
 		{ name: "Subagent report", render: () => <RunReport /> },
 		{ name: "Thought before a call", render: () => <ToolCall call={runCalls(RUN_A[3]!, 3)[5]!} thought={RUN_THOUGHT} args={'{ "command": "python3 /tmp/tray/tools/retag.py src/components/approval-card.tsx" }'} result="ok src/components/approval-card.tsx Tray" defaultOpen /> },
 		{ name: "Long", render: () => <RunLong /> },

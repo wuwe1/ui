@@ -23,9 +23,17 @@ const FOCUS = "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 /** --ease-out-strong, for the Web Animations API */
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-/** What was said, as written – `code` in monospace */
+/** What was said, as written – `code` in monospace, **bold** in semibold; the color stays the step's */
 const plain = (say: string) =>
-	say.split(/(`[^`\n]+`)/).map((x, i) => (x.length > 2 && x.startsWith("`") && x.endsWith("`") ? <code key={i} className="rounded bg-muted px-1 font-mono text-[0.92em]">{x.slice(1, -1)}</code> : x));
+	say.split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/).map((x, i) =>
+		x.length > 2 && x.startsWith("`") && x.endsWith("`") ? (
+			<code key={i} className="rounded bg-muted px-1 font-mono text-[0.92em]">{x.slice(1, -1)}</code>
+		) : x.length > 4 && x.startsWith("**") && x.endsWith("**") ? (
+			<strong key={i} className="font-semibold">{x.slice(2, -2)}</strong>
+		) : (
+			x
+		),
+	);
 
 /**
  * Open or not. A given `open` wins, then a click; otherwise running and stopped are open, and a finished one is open only if it finished
@@ -75,7 +83,7 @@ type RunProps = {
 
 /**
  * The run: one line – its status, its time, and once it ends the calls, files and subagents – over its steps.
- * Running and stopped, the steps show; finished, they fold into the line
+ * Running, stopped and failed, the steps show; finished, they fold into the line
  */
 function Run({ state, steps, since, ms, tools = 0, failed = 0, files = [], onFile, agents = [], onAgent, open, defaultOpen, onOpenChange, children, id, className }: RunProps) {
 	const ref = useRef<HTMLDivElement>(null);
@@ -92,7 +100,8 @@ function Run({ state, steps, since, ms, tools = 0, failed = 0, files = [], onFil
 				<CollapsibleTrigger className={cn(CHEVRON, "flex min-w-0 items-center gap-2 rounded-md py-1 text-left transition-colors hover:text-foreground pointer-coarse:min-h-11", FOCUS)}>
 					<Chevron className="size-3.5 text-current" />
 					{state === "stopped" && <CircleStop className="size-3.5 shrink-0" aria-hidden />}
-					<Shimmer active={live} className="shrink-0">
+					{state === "failed" && <TriangleAlert className="size-3.5 shrink-0 text-destructive-strong" aria-hidden />}
+					<Shimmer active={live} className={cn("shrink-0", state === "failed" && "text-destructive-strong")}>
 						{label}
 					</Shimmer>
 					{live ? since !== undefined && <Elapsed since={since} aria-hidden /> : ms !== undefined && <span className="tabular-nums" aria-hidden>{elapsed(ms)}</span>}
@@ -128,7 +137,7 @@ type RunStepProps = {
 	say: string;
 	/** Instead of the last sentence – nothing was said, say */
 	title?: string;
-	/** Draws what was said – Markdown, say. Default: the text as written, `code` in monospace */
+	/** Draws what was said. Default: the text as written, `code` in monospace, **bold** in semibold – quiet, in the step's gray */
 	renderSay?: (say: string) => ReactNode;
 	state: RunState;
 	/** Its calls, oldest first. The line counts them; the open step lists them unless children are given */
@@ -265,7 +274,7 @@ function RunNote({ kind = "you", text, icon: I = Bot, label = "子代理回报",
 					lit ? "bg-unread-subtle ring-unread/50" : "bg-secondary ring-transparent",
 				)}
 			>
-				{text}
+				{text.trimEnd()}
 				{/* The receipt rides at the end of the words, inside the bubble; it is there from the start, so nothing moves when it shows */}
 				<Check className={cn("ml-1 inline-block size-3 align-[-0.1em] text-muted-foreground transition-opacity duration-300", lit && "opacity-0")} aria-hidden />
 				<span className="sr-only">，已读取</span>

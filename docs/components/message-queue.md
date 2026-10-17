@@ -38,6 +38,7 @@ Messages sent while an agent works, waiting for it to read them – stacked into
 | `onWithdraw` | `(m) => void` | – | The host takes it out of `items` and puts it back in the input |
 | `withdrawing` | `string[]` | `[]` | Ids being pulled back: their button waits, and they sink when they go |
 | `defaultOpen` | `boolean` | `false` | Start as a list |
+| `onTake` | `(m, box) => void` | – | The agent took a message: its card's box just before it goes. Given – the card leaves at once, and the host carries it on – mixer moves it into the step that read it (`RunNote`) |
 | `label` | `string` | 「排队的消息」 | The region's name |
 | `className` | `string` | – | On the region |
 
